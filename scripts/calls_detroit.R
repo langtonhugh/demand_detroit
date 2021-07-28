@@ -107,7 +107,7 @@ times_df <- detroit19_sub_df %>%
                                     true = "AUTO ACCIDENT",
                                     false = calldescription2),
          calldescription2 = if_else(str_detect(calldescription2, "ASSAULT AND BATTERY"),
-                                    true = "ASSAULT AND BATTERY",
+                                    true = "ASSAULT & BATTERY",
                                     false = calldescription2),
          calldescription2 = if_else(str_detect(calldescription2, "ASSAULT DANGEROUSOR SERIOUS|ASSAULT OR SEX ASSAULT DELTA"),
                                     true = "OTHER ASSAULT",
@@ -170,7 +170,7 @@ times_df <- detroit19_sub_df %>%
                                     true = "EXECUTE SEARCH WARRANT",
                                     false = calldescription2),
          calldescription2 = if_else(str_detect(calldescription2, "LEWD AND LASCIVIOUS"),
-                                    true = "LEWD AND LASCIVIOUS CONDUCT",
+                                    true = "LEWD & LASCIVIOUS CONDUCT",
                                     false = calldescription2),
          calldescription2 = if_else(str_detect(calldescription2, "UDAA"),
                                     true = "UDAA",
@@ -234,7 +234,7 @@ times_agg_df <- times_df %>%
          type = if_else(condition = str_detect(type, "FIRE ALARM|MISSING OR FOUND PERSON|PROPERTY DAMAGE NON-CRIMINAL|LOST PROPERTY|TEMPERATURE ALARM|CURFEW VIOLATION|CITIZEN RADIO PATROL IN TROUBL|PEACE OFFICER DETAIL|RESIDENTIAL STRUCTURE FIRE|OTHR OUTSIDE STRUCTURE FIRE|FIRE ALARM|FIRE ALARMS|EXTRICATION / ENTRAPMENT|ELEVATOR ENTRAPMENT|ALARM UNKNOWN CAUSE|ALARM MISUSE|ALARM MALFUNCTION|ANIMAL|ASSIST CITIZEN|SENIOR CITIZEN ASSIS|HOME ALONE|POWER LINES|GRASS  FIRE|VEHICLE FIRE|WSPD - FIRES|COMMERCIAL STRUCTURE FIRE"),
                         true = "community",
                         false = type),
-         type = if_else(condition = str_detect(type, "BANK OR ATM ALARM|BREAK & ENTER AUTO|PANIC, DURESS OR HOLD-UP ALARM|SHOOTING, STABBING OR PENETRATING WOUND|RAPE|BURGLARY ALARMS|ROBBERY|ASSAULT AND BATTERY|FELONIOUS ASSAULT|DOMESTIC INCIDENT|PERSONNEL IN TROUBLE|VIP THREATS I/P|PURSUIT - VEHICLE OR FOOT|PPO VIOLATION|HOLD UP ALARM AND MOW|ATM  ALARM|BANK ALARM|HPPD BURG ALRM|HPPD BURG ALRM  W/ MOW|HIT & RUN|BUS BOARDING|K-9 DEPLOYMENT|RECOVER AUTO|LEWD AND LASCIVIOUS|HOLDING PERSON|EXTORTION|KIDNAPPING|DV |NARCOTICS|MOLESTATION|FRAUD|BOMB|ARSON|SHOTS|STABBED|STAB|OTHER ASSAULT|WEAPON|BURGLARY|BREAKING|LARCENY|CHILD OR ADULT ABUSE|WNTD WRRNT"),
+         type = if_else(condition = str_detect(type, "BANK OR ATM ALARM|BREAK & ENTER AUTO|PANIC, DURESS OR HOLD-UP ALARM|SHOOTING, STABBING OR PENETRATING WOUND|RAPE|BURGLARY ALARMS|ROBBERY|ASSAULT & BATTERY|FELONIOUS ASSAULT|DOMESTIC INCIDENT|PERSONNEL IN TROUBLE|VIP THREATS I/P|PURSUIT - VEHICLE OR FOOT|PPO VIOLATION|HOLD UP ALARM AND MOW|ATM  ALARM|BANK ALARM|HPPD BURG ALRM|HPPD BURG ALRM  W/ MOW|HIT & RUN|BUS BOARDING|K-9 DEPLOYMENT|RECOVER AUTO|LEWD & LASCIVIOUS|HOLDING PERSON|EXTORTION|KIDNAPPING|DV |NARCOTICS|MOLESTATION|FRAUD|BOMB|ARSON|SHOTS|STABBED|STAB|OTHER ASSAULT|WEAPON|BURGLARY|BREAKING|LARCENY|CHILD OR ADULT ABUSE|WNTD WRRNT"),
                         true = "crime",
                         false = type),
          type_comp = if_else(condition = type %in% calldescription2 | str_detect(type, "OTHER ALARMS|ASSIST PERSONNEL|ASSIST OTHER|FIRE ALARM|ALARM MALFUNCTION|ALARM MISUSE|ALARM UNKNOWN CAUSE"),
@@ -245,28 +245,31 @@ times_agg_df <- times_df %>%
   summarise(prop_time = sum(prop_time)) %>% 
   ungroup()
 
-# Descriptive stats.
+# Descriptive stats. 
 times_agg_df %>% 
   group_by(type_comp) %>% 
   summarise(type_prop_time  = sum(prop_time)) %>% 
   ungroup()
 
+# 
 # Graphic counts.
-tree_gg <- ggplot(data = times_agg_df,
-       mapping = aes(area = prop_time, label = calldescription2, subgroup = type_comp, fill = type_comp)) +
-  scale_fill_brewer(palette = "Greys") +
-  geom_treemap(colour = "black", size = 1, alpha = 0.5) +
+ggplot(data = times_agg_df,
+       mapping = aes(area = prop_time, 
+                     label = calldescription2,
+                     subgroup = type_comp)) +
+  geom_treemap(fill = "snow", size = 3, alpha = 0.5) +
   geom_treemap_text(min.size = 1) +
   geom_treemap_subgroup_text(padding.y = unit(0.2, "cm"), colour = "black") +
-  geom_treemap_subgroup_border(colour = "black", size = 2) + 
-  labs(title = "Deployed police time: Proportional breakdown in Detroit.",
-       subtitle = "Deployment time = response time + time on scene",
+  geom_treemap_subgroup_border(colour = "dodgerblue2", size = 4) +
+  labs(title = "How do police spend their time?",
+       subtitle = "Total deployment time by incident in Detroit during 2019.",
        caption = "Code and data sources available at https://github.com/langtonhugh/demand_viz.") +
   theme(legend.position = "none",
-        plot.title = element_text(hjust = 0.5, size = 32),
-        plot.subtitle = element_text(hjust = 0.5, size = 22),
-        plot.caption = element_text(size = 16))
+        plot.title = element_text(size = 32),
+        plot.subtitle = element_text(size = 22),
+        plot.caption = element_text(size = 16),
+        panel.border = element_rect(colour = "dodgerblue2", fill = "transparent", size = 3)) -> tree_gg
 
 # Save.
-ggsave(plot = tree_gg, filename = "visuals/tree_time_gg.png", height = 60, width = 40, unit = "cm")
-
+ggsave(plot = tree_gg, filename = "visuals/tree_time_gg.png",
+       height = 30, width = 40, unit = "cm")
