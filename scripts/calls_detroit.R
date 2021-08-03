@@ -94,9 +94,6 @@ times_df <- detroit19_sub_df %>%
          calldescription2 = if_else(str_detect(calldescription2, "BURGLARY"), # captures small alarm category
                                     true = "BURGLARY",
                                     false = calldescription2),
-         calldescription2 = if_else(str_detect(calldescription2, "BURGLARY"), # captures small alarm category
-                                    true = "BURGLARY",
-                                    false = calldescription2),
          calldescription2 = if_else(str_detect(calldescription2, "HIT & RUN|HIT& RUN"),
                                     true = "HIT & RUN",
                                     false = calldescription2),
@@ -151,9 +148,6 @@ times_df <- detroit19_sub_df %>%
          calldescription2 = if_else(str_detect(calldescription2, "SHOOTING|SHOT STAB"), # shooting/cutting/pent wound
                                     true = "SHOOTING, STABBING OR PENETRATING WOUND",
                                     false = calldescription2),
-         # calldescription2 = if_else(str_detect(calldescription2, "RAPE|MOLESTATION"),
-         #                            true = "RAPE OR MOLESTATION",
-         #                            false = calldescription2),
          calldescription2 = if_else(str_detect(calldescription2, "ADULT ABUSE"),
                                     true = "CHILD OR ADULT ABUSE",
                                     false = calldescription2),
@@ -207,7 +201,25 @@ times_df <- detroit19_sub_df %>%
                                     false = calldescription2),
          calldescription2 = if_else(str_detect(calldescription2, "VIP THREATS I/P"), # combine real and tests
                                     true = "VIP THREATS",
-                                    false = calldescription2)) %>% 
+                                    false = calldescription2),
+         calldescription2 = if_else(str_detect(calldescription2, "MALICIOUS DESTRUCTION"), # combine real and tests
+                                    true = "MALICIOUS DESTRUCTION",
+                                    false = calldescription2),
+         calldescription2 = if_else(str_detect(calldescription2, "DDOT"), # combine real and tests
+                                    true = "PUBLIC TRANSPORT",
+                                    false = calldescription2),
+         calldescription2 = if_else(str_detect(calldescription2, "BAIT PROPERTY DEPLOYMENT"), # combine real and tests
+                                    true = "BAIT",
+                                    false = calldescription2),
+         calldescription2 = if_else(str_detect(calldescription2, "PEACE OFFICER DETAIL"), # combine real and tests
+                                    true = "PEACE OFFICER",
+                                    false = calldescription2),
+         calldescription2 = if_else(str_detect(calldescription2, "CHILD HOME"), # combine real and tests
+                                    true = "CHILD HOME ALONE",
+                                    false = calldescription2),
+         calldescription2 = if_else(str_detect(calldescription2, "TRANSPORT PRISONER"), # combine real and tests
+                                    true = "TRANSPORT PRISONER",
+                                    false = calldescription2)) %>%
   group_by(calldescription2) %>% 
   summarise(sum_time = sum(totaltime),
             sum_counts = n()) %>% 
@@ -222,25 +234,25 @@ times_agg_df <- times_df %>%
   mutate(type = if_else(condition = str_detect(calldescription2, "EMS|OVERDOSE|SERIOUS INJURIES|HEMORRHAGE|FAINTING ALRT|INHALATION|SEIZURE|MENTAL HEALTH|WELL BEING|SUICIDE INCIDENT OR THREAT|MEDICAL ALARM|HOSPITAL|SICK|BREATHING"),
                         true = "health",
                         false = calldescription2),
-         type = if_else(condition = str_detect(type, "WANTED WARRANT|EXECUTE SEARCH WARRANT|BAIT PROPERTY DEPLOYMENT|SPECIAL ATTENTION|TRANSPORT PRISONER|TRANSPORT PRISONER-OTH AGT|ESCORT|SAFEWALK|BE ON THE LOOK OUT|INVESTIGATE|BUILDING CHECK"),
+         type = if_else(condition = str_detect(type, "TRANSPORT PRISONER|WANTED WARRANT|EXECUTE SEARCH WARRANT|BAIT|SPECIAL ATTENTION|ESCORT|SAFEWALK|BE ON THE LOOK OUT|INVESTIGATE|BUILDING CHECK"),
                         true = "proactive",
                         false = type),
-         type = if_else(condition = str_detect(type, "SMOKING VIOLATIONS|EXPLOSION|DEAD PERSON OBSERVED|SUSPICIOUS PACKAGE|SMOKE INVESTIGATION|YOUTH LOITERING/CONGREGATING|SCHOOL CROSSING|SCHOOL THREATS I/P|SCHOOL THREATS J/H & RPT|MALICIOUS DESTRUCTION|DISTURBANCE|VANDALISM|PARKING|NOISE|LITTERING"),
+         type = if_else(condition = str_detect(type, "PUBLIC TRANSPORT|SMOKING VIOLATIONS|EXPLOSION|DEAD PERSON OBSERVED|SUSPICIOUS PACKAGE|SMOKE INVESTIGATION|YOUTH LOITERING/CONGREGATING|SCHOOL CROSSING|SCHOOL THREATS I/P|SCHOOL THREATS J/H & RPT|DISTURBANCE|VANDALISM|PARKING|NOISE|LITTERING"),
                         true = "quality of life",
                         false = type),
          type = if_else(condition = str_detect(type, "UDAA|BREATH TEST|LICENCE REVOCATION|AUTO ACCIDENT|HAZARDOUS CONDITIONS|TOWING DETAIL|TRAFFIC|ENTERING AUTO|MOTOR"),
                         true = "traffic",
                         false = type),
-         type = if_else(condition = str_detect(type, "FIRE ALARM|MISSING OR FOUND PERSON|PROPERTY DAMAGE NON-CRIMINAL|LOST PROPERTY|TEMPERATURE ALARM|CURFEW VIOLATION|CITIZEN RADIO PATROL IN TROUBL|PEACE OFFICER DETAIL|RESIDENTIAL STRUCTURE FIRE|OTHR OUTSIDE STRUCTURE FIRE|FIRE ALARM|FIRE ALARMS|EXTRICATION / ENTRAPMENT|ELEVATOR ENTRAPMENT|ALARM UNKNOWN CAUSE|ALARM MISUSE|ALARM MALFUNCTION|ANIMAL|ASSIST CITIZEN|SENIOR CITIZEN ASSIS|HOME ALONE|POWER LINES|GRASS  FIRE|VEHICLE FIRE|WSPD - FIRES|COMMERCIAL STRUCTURE FIRE"),
+         type = if_else(condition = str_detect(type, "CHILD HOME|FIRE ALARM|MISSING OR FOUND PERSON|PROPERTY DAMAGE NON-CRIMINAL|LOST PROPERTY|TEMPERATURE ALARM|CURFEW VIOLATION|CITIZEN RADIO PATROL IN TROUBL|PEACE OFFICER DETAIL|RESIDENTIAL STRUCTURE FIRE|OTHR OUTSIDE STRUCTURE FIRE|FIRE ALARM|FIRE ALARMS|EXTRICATION / ENTRAPMENT|ELEVATOR ENTRAPMENT|ALARM UNKNOWN CAUSE|ALARM MISUSE|ALARM MALFUNCTION|ANIMAL|ASSIST CITIZEN|SENIOR CITIZEN ASSIS|HOME ALONE|POWER LINES|GRASS  FIRE|VEHICLE FIRE|WSPD - FIRES|COMMERCIAL STRUCTURE FIRE"),
                         true = "community",
                         false = type),
-         type = if_else(condition = str_detect(type, "BANK OR ATM ALARM|BREAK & ENTER AUTO|PANIC, DURESS OR HOLD-UP ALARM|SHOOTING, STABBING OR PENETRATING WOUND|RAPE|BURGLARY ALARMS|ROBBERY|ASSAULT & BATTERY|FELONIOUS ASSAULT|DOMESTIC INCIDENT|PERSONNEL IN TROUBLE|VIP THREATS I/P|PURSUIT - VEHICLE OR FOOT|PPO VIOLATION|HOLD UP ALARM AND MOW|ATM  ALARM|BANK ALARM|HPPD BURG ALRM|HPPD BURG ALRM  W/ MOW|HIT & RUN|BUS BOARDING|K-9 DEPLOYMENT|RECOVER AUTO|LEWD & LASCIVIOUS|HOLDING PERSON|EXTORTION|KIDNAPPING|DV |NARCOTICS|MOLESTATION|FRAUD|BOMB|ARSON|SHOTS|STABBED|STAB|OTHER ASSAULT|WEAPON|BURGLARY|BREAKING|LARCENY|CHILD OR ADULT ABUSE|WNTD WRRNT"),
+         type = if_else(condition = str_detect(type, "MALICIOUS DESTRUCTION|BANK OR ATM ALARM|BREAK & ENTER AUTO|PANIC, DURESS OR HOLD-UP ALARM|SHOOTING, STABBING OR PENETRATING WOUND|RAPE|BURGLARY ALARMS|ROBBERY|ASSAULT & BATTERY|FELONIOUS ASSAULT|DOMESTIC INCIDENT|PERSONNEL IN TROUBLE|VIP THREATS I/P|PURSUIT - VEHICLE OR FOOT|PPO VIOLATION|HOLD UP ALARM AND MOW|ATM  ALARM|BANK ALARM|HPPD BURG ALRM|HPPD BURG ALRM  W/ MOW|HIT & RUN|BUS BOARDING|K-9 DEPLOYMENT|RECOVER AUTO|LEWD & LASCIVIOUS|HOLDING PERSON|EXTORTION|KIDNAPPING|DV |NARCOTICS|MOLESTATION|FRAUD|BOMB|ARSON|SHOTS|STABBED|STAB|OTHER ASSAULT|WEAPON|BURGLARY|BREAKING|LARCENY|CHILD OR ADULT ABUSE|WNTD WRRNT"),
                         true = "crime",
                         false = type),
          type_comp = if_else(condition = type %in% calldescription2 | str_detect(type, "OTHER ALARMS|ASSIST PERSONNEL|ASSIST OTHER|FIRE ALARM|ALARM MALFUNCTION|ALARM MISUSE|ALARM UNKNOWN CAUSE"),
                              true = "unclassified",
                              false = type),
-         calldescription2 = if_else(prop_time < 0.0005, true  = "OTHER", false = calldescription2)) %>% 
+         calldescription2 = if_else(prop_time < 0.001, true  = "OTHER", false = calldescription2)) %>% 
   group_by(calldescription2, type_comp) %>% 
   summarise(prop_time = sum(prop_time)) %>% 
   ungroup()
@@ -251,25 +263,28 @@ times_agg_df %>%
   summarise(type_prop_time  = sum(prop_time)) %>% 
   ungroup()
 
-# 
-# Graphic counts.
+# Remove unclassified (!!!).
+# times_agg_df <- times_agg_df %>% 
+#   filter(type_comp != "unclassified")
+
+# Proportional breakdown graphic.
 ggplot(data = times_agg_df,
        mapping = aes(area = prop_time, 
                      label = calldescription2,
                      subgroup = type_comp)) +
   geom_treemap(fill = "snow", size = 3, alpha = 0.5) +
-  geom_treemap_text(min.size = 1) +
-  geom_treemap_subgroup_text(padding.y = unit(0.2, "cm"), colour = "black") +
+  geom_treemap_text(padding.x = unit(0.2, "cm"), padding.y = unit(0.3, "cm"), family = "serif") +
+  geom_treemap_subgroup_text(padding.y = unit(0.3, "cm"), colour = "black", size = 48, family = "serif", place = "bottomleft") +
   geom_treemap_subgroup_border(colour = "dodgerblue2", size = 4) +
-  labs(title = "How do police spend their time?",
-       subtitle = "Total deployment time by incident in Detroit during 2019.",
-       caption = "Code and data sources available at https://github.com/langtonhugh/demand_viz.") +
+  labs(title = "Time spent on incidents by Detroit Police Department.",
+       # subtitle = "Time spent = response time + time on scene",
+       caption = "Code and data sources available at https://github.com/langtonhugh/demand_viz.\n @sh_langton") +
   theme(legend.position = "none",
-        plot.title = element_text(size = 32),
-        plot.subtitle = element_text(size = 22),
-        plot.caption = element_text(size = 16),
-        panel.border = element_rect(colour = "dodgerblue2", fill = "transparent", size = 3)) -> tree_gg
+        plot.title    = element_text(size = 32, family = "serif"),
+        plot.subtitle = element_text(size = 22, family = "serif"),
+        plot.caption  = element_text(size = 16, family = "serif"),
+        panel.border  = element_rect(colour = "dodgerblue2", fill = "transparent", size = 3)) -> tree_gg
 
 # Save.
 ggsave(plot = tree_gg, filename = "visuals/tree_time_gg.png",
-       height = 30, width = 40, unit = "cm")
+       height = 40, width = 60, unit = "cm")
