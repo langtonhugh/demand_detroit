@@ -20,171 +20,114 @@ library(tidyr)
 # Load.
 detroit_df <- read_csv("data/detroit_16_21.csv")
 
-# Date checks.
-detroit_df %>% 
-  slice(1:5) %>% 
-  select(call_timestamp)
-
 # Subset for 2019. We want pre-COVID.
 detroit19_df <- detroit_df %>% 
   filter(str_detect(call_timestamp, "2019/"))
 
 # Date checks.
 detroit19_df %>% 
-  slice(1:5) %>% 
-  select(call_timestamp)
-
-detroit19_df %>% 
   mutate(year = as.character(str_extract_all(call_timestamp, "^.{4}"))) %>% 
   group_by(year) %>% 
   summarise(counts = n())
 
-# Remove original to free memory if needed.
-rm(detroit_df)
+# Check time variables variables.
+detroit19_df %>% 
+  select(calldescription, dispatchtime, traveltime, totalresponsetime, time_on_scene, totaltime)
 
-# Missings.
+# Totaltime = totalresponsetime + time_on_scene
+# Makes sense.
+
+# Missings in key variables.
 sum(is.na(detroit19_df$calldescription))
-sum(is.na(detroit19_df$totaltime))
+sum(is.na(detroit19_df$totaltime)) # ~121k
 
 # Remove missings, zeros and negatives.
 detroit19_sub_df <- detroit19_df %>% 
   drop_na(totaltime) %>% 
-  filter(totaltime != 0, totaltime >= 0)
+  filter(totaltime >0)
 
-# What's the distribution now?
-# ggplot(data = detroit19_sub_df) +
-#   geom_histogram(mapping = aes(x = totaltime), bins = 100)
+# What is the distribution of total time?
+ggplot(data = detroit19_sub_df) +
+  geom_histogram(mapping = aes(x = totaltime), bins = 30)
 
-# Outliers are massively skewing this. For now, arbitrary cut-off.
-detroit19_sub_no_df <- detroit19_sub_df %>% 
-  filter(totaltime < 300)
-
-# What's the distribution now?
-# ggplot(data = detroit19_sub_no_df) +
-#   geom_histogram(mapping = aes(x = totaltime), bins = 100)
-
-# What take the most time?
-freqs_df <- detroit19_sub_no_df %>% 
-  group_by(calldescription) %>% 
-  summarise(tt_cd = sum(totaltime)) %>% 
-  arrange(tt_cd)
-
-# Calculate sum times by category, filter out admin/role categories.
-times_df <- detroit19_sub_df %>% 
-  filter(!str_detect(calldescription, "REPORT|RPT"),
-         calldescription != "REMARKS",
+# First, filter out calldescriptions which are admin, completely unknown or do not involve deployment.
+# We retain 'REPORT' (or similar e.g. RPT).
+detroit19_deploy_df <- detroit19_sub_df %>%
+  filter(calldescription != "REMARKS", 
          calldescription != "START OF SHIFT INFORMATION",
          calldescription != "UNKNOWN PROBLEM",
          calldescription != "VIRTUAL SPECIAL ATTENTION",
          calldescription != "EMPLOYEE CALL IN / TIME OFF",
-         calldescription != "CALL BACK DESK") %>%
-  mutate(calldescription2 = if_else(str_detect(calldescription, "DV"),
-                                   true = "DOMESTIC INCIDENT",
-                                   false = calldescription),
-         calldescription2 = if_else(str_detect(calldescription2, "MENTAL"),
-                                    true = "MENTAL HEALTH",
-                                    false = calldescription2),
-         calldescription2 = if_else(str_detect(calldescription2, "SUICIDE"),
-                                    true = "SUICIDE INCIDENT OR THREAT",
-                                    false = calldescription2),
-         calldescription2 = if_else(str_detect(calldescription2, "EMS"),
+         calldescription != "CALL BACK DESK")
+
+# How many categories remain?
+length(unique(detroit19_deploy_df$calldescription)) # 211
+
+# Create df to consult names for suitable recoding.
+calldesc_df <- tibble(calldescription = unique(detroit19_deploy_df$calldescription)) %>% 
+  arrange(calldescription)
+
+# Recode raw calldescription into broader categories and rename to short characters as appropriate.
+detroit19_deploy_df <- detroit19_deploy_df %>% 
+  mutate(calldescription2 = if_else(str_detect(calldescription, "DV")                                      ,"DOMESTIC INCIDENT"          , calldescription),
+         calldescription2 = if_else(str_detect(calldescription, "MENTAL")                                  ,"MENTAL HEALTH"              , calldescription2),
+         calldescription2 = if_else(str_detect(calldescription, "SUICIDE")                                 ,"SUICIDE OR SUICIDE THREAT"  , calldescription2),
+         calldescription2 = if_else(str_detect(calldescription, "BURGLARY")                                ,"BURGLARY"                   , calldescription2),
+         calldescription2 = if_else(str_detect(calldescription, "HIT & RUN|HIT& RUN")                      ,"HIT & RUN"                  , calldescription2),
+         calldescription2 = if_else(str_detect(calldescription, "LOST PROPERTY|RECOVERED / FOUND PROPERTY"),"LOST PROPERTY"              , calldescription2),
+         calldescription2 = if_else(str_detect(calldescription, "AUTO X")                                  ,"AUTO ACCIDENT"              , calldescription2),
+         calldescription2 = if_else(str_detect(calldescription, "ASSAULT AND BATTERY")                     ,"ASSAULT & BATTERY"          , calldescription2),
+         calldescription2 = if_else(str_detect(calldescription, "ASSAULT DANGEROUSOR SERIOUS|ASSAULT OR")  ,"OTHER ASSAULT"              , calldescription2),
+         calldescription2 = if_else(str_detect(calldescription,"FELONIOUS ASSAULT")                        ,"FELONIOUS ASSAULT"          , calldescription2),
+         calldescription2 = if_else(str_detect(calldescription, "OVERDOSE|DRUG OD")                        ,"OVERDOSE"                   , calldescription2),
+         calldescription2 = if_else(str_detect(calldescription, "ROBBERY ARMED")                           ,"ARMED ROBBERY"              , calldescription2),
+         calldescription2 = if_else(str_detect(calldescription, "ROBBERY NOT ARMED")                       ,"UNARMED ROBBERY"            , calldescription2),
+         calldescription2 = if_else(str_detect(calldescription, "ANIMAL")                                  ,"ANIMAL INCIDENT"            , calldescription2),
+         calldescription2 = if_else(str_detect(calldescription, "MISSING|FOUND PERSON")                    ,"MISSING OR FOUND PERSON"    , calldescription2),
+         calldescription2 = if_else(str_detect(calldescription, "ARSON")                                   ,"ARSON"                      , calldescription2),
+         calldescription2 = if_else(str_detect(calldescription, "FRAUD")                                   ,"FRAUD"                      , calldescription2),
+         calldescription2 = if_else(str_detect(calldescription, "SHOTS")                                   ,"SHOTS"                      , calldescription2),
+         calldescription2 = if_else(str_detect(calldescription, "SHOOTING|SHOT STAB")                      ,"SHOOTING OR STABBING WOUND" , calldescription2),
+         calldescription2 = if_else(str_detect(calldescription, "NARCOTICS")                               ,"NARCOTICS"                  , calldescription2),
+         calldescription2 = if_else(str_detect(calldescription, "LARCENY")                                 ,"LARCENY"                    , calldescription2),
+         calldescription2 = if_else(str_detect(calldescription, "RAPE")                                    ,"RAPE"                       , calldescription2),
+         calldescription2 = if_else(str_detect(calldescription, "LEWD AND LASCIVIOUS")                     ,"LEWD & LASCIVIOUS CONDUCT"  , calldescription2),
+         calldescription2 = if_else(str_detect(calldescription, "UDAA")                                    ,"UDAA"                       , calldescription2),
+         calldescription2 = if_else(str_detect(calldescription, "AID MOTORIST")                            ,"AID MOTORIST"               , calldescription2),
+         calldescription2 = if_else(str_detect(calldescription, "BREAKING AND|BREAKING &")                 ,"BREAK & ENTER AUTO"         , calldescription2),
+         calldescription2 = if_else(str_detect(calldescription, "PPO VIOLATION")                           ,"PPO VIOLATION"              , calldescription2),
+         calldescription2 = if_else(str_detect(calldescription, "WNTD WRRNT|EXECUTE SEARCH WARRANT")       ,"WARRANT"                    , calldescription2),
+         calldescription2 = if_else(str_detect(calldescription, "THREATS REPORT|VIP THREATS")              ,"THREATS"                    , calldescription2),
+         calldescription2 = if_else(str_detect(calldescription, "MALICIOUS DESTRUCTION")                   ,"MALICIOUS DESTRUCTION"      , calldescription2),
+         calldescription2 = if_else(str_detect(calldescription2, "TRANSPORT PRISONER")                     ,"TRANSPORT PRISONER"         , calldescription2),
+         calldescription2 = if_else(calldescription == "PEACE OFFICER DETAIL"                              ,"PEACE OFFICER"              , calldescription2),
+         calldescription2 = if_else(calldescription == "BAIT PROPERTY DEPLOYMENT"                          ,"BAIT"                       , calldescription2),
+         calldescription2 = if_else(calldescription == "VERIFIED ALR / PERSON W/O CODE"                    ,"LICENCE REVOCATION"         , calldescription2),
+         calldescription2 = if_else(calldescription == "PBT TEST"                                          ,"BREATH TEST"                , calldescription2),
+         calldescription2 = if_else(calldescription == "CHILD /  ADULT ABUSE|CHILD / ADULT ABUSE REPORT"   ,"CHILD OR ADULT ABUSE"       , calldescription2),
+         calldescription2 = if_else(calldescription == "MEDICAL ALARM OR UNK PROB"                         ,"MEDICAL ALARM"              , calldescription2),
+         calldescription2 = if_else(calldescription == "RUBBISH LITTERING I/P"                             ,"LITTERING"                  , calldescription2))
+
+# Create new df to consult recoding.
+calldesc2_df <- detroit19_deploy_df %>% 
+  select(calldescription, calldescription2) %>% 
+  distinct() %>% 
+  arrange(calldescription)
+  
+
+         # Calculate sum times by category, filter out admin/role categories.
+times_df <- detroit19_sub_df %>% 
+  mutate(calldescription2 = if_else(str_detect(calldescription2, "EMS"),
                                     true = "EMS",
-                                    false = calldescription2),
-         calldescription2 = if_else(str_detect(calldescription2, "BURGLARY"), # captures small alarm category
-                                    true = "BURGLARY",
-                                    false = calldescription2),
-         calldescription2 = if_else(str_detect(calldescription2, "HIT & RUN|HIT& RUN"),
-                                    true = "HIT & RUN",
-                                    false = calldescription2),
-         calldescription2 = if_else(str_detect(calldescription2, "LOST PROPERTY|RECOVERED / FOUND PROPERTY"),
-                                    true = "LOST PROPERTY",
-                                    false = calldescription2),
-         calldescription2 = if_else(str_detect(calldescription2, "AUTO X"),
-                                    true = "AUTO ACCIDENT",
-                                    false = calldescription2),
-         calldescription2 = if_else(str_detect(calldescription2, "ASSAULT AND BATTERY"),
-                                    true = "ASSAULT & BATTERY",
-                                    false = calldescription2),
-         calldescription2 = if_else(str_detect(calldescription2, "ASSAULT DANGEROUSOR SERIOUS|ASSAULT OR SEX ASSAULT DELTA"),
-                                    true = "OTHER ASSAULT",
-                                    false = calldescription2),
-         calldescription2 = if_else(str_detect(calldescription2, "FELONIOUS ASSAULT"),
-                                    true = "FELONIOUS ASSAULT",
-                                    false = calldescription2),
-         calldescription2 = if_else(str_detect(calldescription2, "OVERDOSE|DRUG OD"),
-                                    true = "OVERDOSE",
-                                    false = calldescription2),
-         calldescription2 = if_else(str_detect(calldescription2, "ROBBERY ARMED"),
-                                    true = "ARMED ROBBERY",
-                                    false = calldescription2),
-         calldescription2 = if_else(str_detect(calldescription2, "ROBBERY NOT ARMED"),
-                                    true = "UNARMED ROBBERY",
-                                    false = calldescription2),
-         calldescription2 = if_else(str_detect(calldescription2, "ANIMAL BITE|VICIOUS ANIMAL"),
-                                    true = "VICIOUS ANIMAL OR BITE",
-                                    false = calldescription2),
-         calldescription2 = if_else(str_detect(calldescription2, "MISSING|FOUND"),
-                                    true = "MISSING OR FOUND PERSON",
                                     false = calldescription2),
          calldescription2 = if_else(str_detect(calldescription2, "VERIFIED ALR|ALR PT"),
                                     true = "LICENCE REVOCATION",
                                     false = calldescription2),
-         calldescription2 = if_else(str_detect(calldescription2, "PBT TEST"),
-                                    true = "BREATH TEST",
-                                    false = calldescription2),
          calldescription2 = if_else(str_detect(calldescription2, "ALRM"),
                                     true = "BURGLARY ALARMS",
                                     false = calldescription2),
-         calldescription2 = if_else(str_detect(calldescription2, "ARSON"),
-                                    true = "ARSON",
-                                    false = calldescription2),
-         calldescription2 = if_else(str_detect(calldescription2, "FRAUD"),
-                                    true = "FRAUD",
-                                    false = calldescription2),
-         calldescription2 = if_else(str_detect(calldescription2, "SHOTS"),
-                                    true = "SHOTS FIRED",
-                                    false = calldescription2),
-         calldescription2 = if_else(str_detect(calldescription2, "SHOOTING|SHOT STAB"), # shooting/cutting/pent wound
-                                    true = "SHOOTING, STABBING \nOR PENETRATING \nWOUND",
-                                    false = calldescription2),
-         calldescription2 = if_else(str_detect(calldescription2, "ADULT ABUSE"),
-                                    true = "CHILD OR ADULT ABUSE",
-                                    false = calldescription2),
-         calldescription2 = if_else(str_detect(calldescription2, "NARCOTICS"),
-                                    true = "NARCOTICS",
-                                    false = calldescription2),
-         calldescription2 = if_else(str_detect(calldescription2, "LARCENY"),
-                                    true = "LARCENY",
-                                    false = calldescription2),
-         calldescription2 = if_else(str_detect(calldescription2, "RAPE"),
-                                    true = "RAPE",
-                                    false = calldescription2),
-         # calldescription2 = if_else(str_detect(calldescription2, "RAID - EXECUTE SEARCH WARRANT"),
-         #                            true = "EXECUTE SEARCH WARRANT",
-         #                            false = calldescription2),
-         calldescription2 = if_else(str_detect(calldescription2, "LEWD AND LASCIVIOUS"),
-                                    true = "LEWD & LASCIVIOUS CONDUCT",
-                                    false = calldescription2),
-         calldescription2 = if_else(str_detect(calldescription2, "UDAA"),
-                                    true = "UDAA",
-                                    false = calldescription2),
-         calldescription2 = if_else(str_detect(calldescription2, "AID MOTORIST"), # include child locked in car
-                                    true = "AID MOTORIST",
-                                    false = calldescription2),
-         calldescription2 = if_else(str_detect(calldescription2, "BREAKING AND ENTERING AUTO I/P"),
-                                    true = "BREAK & ENTER AUTO",
-                                    false = calldescription2),
-         calldescription2 = if_else(str_detect(calldescription2, "PPO VIOLATION"), 
-                                    true = "PPO VIOLATION",
-                                    false = calldescription2),
          calldescription2 = if_else(str_detect(calldescription2, "PANIC|HOLD UP"), 
                                     true = "PANIC, DURESS \nOR HOLD-UP ALARM",
-                                    false = calldescription2),
-         calldescription2 = if_else(str_detect(calldescription2, "WNTD WRRNT|EXECUTE SEARCH WARRANT"), 
-                                    true = "WARRANT",
-                                    false = calldescription2),
-         calldescription2 = if_else(str_detect(calldescription2, "MEDICAL ALARM"), 
-                                    true = "MEDICAL ALARM",
                                     false = calldescription2),
          calldescription2 = if_else(str_detect(calldescription2, "BANK ALARM|ATM ALARM"), 
                                     true = "BANK OR ATM ALARM",
@@ -195,33 +138,10 @@ times_df <- detroit19_sub_df %>%
          calldescription2 = if_else(str_detect(calldescription2, "ALARM MALFUNCTION|ALARM UNKNOWN"), # combine real and tests
                                     true = "OTHER ALARMS",
                                     false = calldescription2),
-         calldescription2 = if_else(str_detect(calldescription2, "RUBBISH LITTERING I/P"), # combine real and tests
-                                    true = "LITTERING",
-                                    false = calldescription2),
-         calldescription2 = if_else(str_detect(calldescription2, "VIP THREATS I/P"), # combine real and tests
-                                    true = "VIP THREATS",
-                                    false = calldescription2),
-         calldescription2 = if_else(str_detect(calldescription2, "MALICIOUS DESTRUCTION"), # combine real and tests
-                                    true = "MALICIOUS DESTRUCTION",
-                                    false = calldescription2),
-         calldescription2 = if_else(str_detect(calldescription2, "DDOT"), # combine real and tests
-                                    true = "PUBLIC TRANSPORT",
-                                    false = calldescription2),
-         calldescription2 = if_else(str_detect(calldescription2, "BAIT PROPERTY DEPLOYMENT"), # combine real and tests
-                                    true = "BAIT",
-                                    false = calldescription2),
-         calldescription2 = if_else(str_detect(calldescription2, "PEACE OFFICER DETAIL"), # combine real and tests
-                                    true = "PEACE OFFICER",
-                                    false = calldescription2),
-         calldescription2 = if_else(str_detect(calldescription2, "CHILD HOME"), # combine real and tests
-                                    true = "CHILD HOME ALONE",
-                                    false = calldescription2),
-         calldescription2 = if_else(str_detect(calldescription2, "TRANSPORT PRISONER"), # combine real and tests
-                                    true = "TRANSPORT PRISONER",
-                                    false = calldescription2),
-         calldescription2 = if_else(str_detect(calldescription2, "HAZARDOUS CONDITIONS"), # combine real and tests
-                                    true = "HAZARDOUS \nCONDITIONS",
-                                    false = calldescription2),
+
+
+
+
          calldescription2 = if_else(str_detect(calldescription2, "HOLDING PERSON"), # combine real and tests
                                     true = "HOLDING \nPERSON",
                                     false = calldescription2)) %>%
