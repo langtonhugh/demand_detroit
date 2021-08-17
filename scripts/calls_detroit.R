@@ -1,11 +1,13 @@
 # Load libraries.
 library(readr)
-library(janitor)
 library(dplyr)
+library(tidyr)
+library(forcats)
 library(stringr)
+library(lubridate)
 library(treemapify)
 library(ggplot2)
-library(tidyr)
+library(cowplot)
 
 # Useful function.
 `%nin%` <- Negate(`%in%`)
@@ -21,28 +23,29 @@ library(tidyr)
 detroit_df <- read_csv("data/detroit_16_21.csv")
 
 # Subset for 2019. We want pre-COVID.
-detroit19_df <- detroit_df %>% 
-  filter(str_detect(call_timestamp, "2019/"))
+detroit_df <- detroit_df %>% 
+  filter(str_detect(call_timestamp, "2019"))
 
 # Date checks.
-detroit19_df %>% 
+detroit_df %>% 
   mutate(year = as.character(str_extract_all(call_timestamp, "^.{4}"))) %>% 
   group_by(year) %>% 
-  summarise(counts = n())
+  summarise(counts = n()) %>% 
+  ungroup()
 
 # Check time variables variables.
-detroit19_df %>% 
+detroit_df %>% 
   select(calldescription, dispatchtime, traveltime, totalresponsetime, time_on_scene, totaltime)
 
 # Totaltime = totalresponsetime + time_on_scene
 # Makes sense.
 
 # Missings in key variables.
-sum(is.na(detroit19_df$calldescription))
-sum(is.na(detroit19_df$totaltime)) # ~121k
+sum(is.na(detroit_df$calldescription))
+sum(is.na(detroit_df$totaltime)) # ~121k
 
 # Remove missings, zeros and negatives.
-detroit19_sub_df <- detroit19_df %>% 
+detroit19_sub_df <- detroit_df %>% 
   drop_na(totaltime) %>% 
   filter(totaltime >0)
 
@@ -154,6 +157,9 @@ detroit_19_times_df <- detroit19_deploy_df %>%
          prop_time      = 100*(round(sum_time/total_time, 6)),
          prop_counts    = 100*(round(sum_counts/total_counts, 6)) ) %>% 
   ungroup() 
+
+# Check missings.
+sum(is.na(detroit_19_times_df$prop_time)) # 0
 
 # Base graphic.
 detroit_19_times_df %>%
@@ -284,47 +290,90 @@ detroit_19_times_df <- detroit_19_times_df %>%
          type = if_else(calldescription2 %in% unclas_vec   , "unclassified"   , type)) %>% 
   arrange(type)
 
-# Create 'other' category by broad categorisation.
+# Check missings.
+sum(is.na(detroit_19_times_df)) # 0
+
+# Create 'other' categories, aggregate.
 detroit_19_times_agg_df <- detroit_19_times_df %>%
   mutate(calldescription2 = if_else(prop_time < 0.1, true  = "OTHER", false = calldescription2)) %>% 
   group_by(calldescription2, type) %>% 
-  summarise(prop_time = sum(prop_time)) %>% 
+  summarise(prop_time  = sum(prop_time),
+            prop_count = sum(prop_counts)) %>% 
   ungroup() %>% 
   arrange(type)
+
+# Check missings.
+sum(is.na(detroit_19_times_agg_df)) # 0
 
 # Descriptive stats. 
 detroit_19_times_agg_df %>% 
   group_by(type) %>% 
-  summarise(type_prop_time  = sum(prop_time)) %>% 
+  summarise(type_prop_count  = sum(prop_count),
+            type_prop_time   = sum(prop_time)) %>% 
   ungroup()
 
 # Demand time graphic.
-detroit_19_times_agg_df %>% 
-  filter(type != "unclassified") %>% 
+detroit_19_times_agg_df %>%
+  filter(type != "unclassified") %>%
 ggplot(mapping = aes(area = prop_time, label = calldescription2, subgroup = type)) +
   geom_treemap(fill = "snow", colour = "lightgrey", size = 2, alpha = 0.5) +
   geom_treemap_text(padding.y = unit(0.3, "cm"), grow = FALSE, family = "serif", ) +
   geom_treemap_subgroup_text(padding.y = unit(0.3, "cm"), , place = "bottomleft", colour = "black", size = 48, family = "serif") +
   geom_treemap_subgroup_border(colour = "dodgerblue2", size = 4) +
   theme(legend.position = "none",
-        panel.border  = element_rect(colour = "dodgerblue2", fill = "transparent", size = 2.5)) -> tree_gg
+        panel.border  = element_rect(colour = "dodgerblue2", fill = "transparent", size = 2.5)) 
 
 # Save.
 ggsave(filename = "visuals/demand_time.png", height = 40, width = 60, unit = "cm", dpi = 300)
 
 # For further descriptive statsitics, we join the new categories back with the raw data.
 detroit19_deploy_df <- detroit19_deploy_df %>% 
-  left_join(detroit_19_times_agg_df)
+  left_join(detroit_19_times_df)
+
+# Check missings after join.
+sum(is.na(detroit19_deploy_df$prop_counts))
+
+# Recreate other category by type.
+detroit19_deploy_df <- detroit19_deploy_df %>%
+  mutate(calldescription2 = if_else(prop_time < 0.1, true  = "OTHER", false = calldescription2))
 
 # Investigate missings in timestamps.
+sum(is.na(detroit19_deploy_df$call_timestamp)) # 0
 
-# Aggregate to nearest hour.
+# Create date class, round to nearest hour, create day of week label.
+detroit19_deploy_df <- detroit19_deploy_df %>% 
+  mutate(call_timestamp_l  = as_datetime(call_timestamp),
+         call_timestamp_lr = round_date(call_timestamp_l, "hour")) %>% 
+  separate(col = call_timestamp_lr, into = c("date_lr", "time_lr"), sep = " ", remove = FALSE) %>%
+  mutate(week_day = wday(date_lr, label = TRUE, abbr = FALSE),
+         week_day = fct_relevel(week_day, "Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"))
 
-# Create day of the week variable.
+# Create small example of detroit19_deploy_df for manual viewing.
+mini_df <- detroit19_deploy_df %>% 
+  slice(1:100)
 
-# Aggregate by hour and day of the week.
+# Aggregate by date and hour.
+dh_agg_df <- detroit19_deploy_df %>% 
+  group_by(date_lr, time_lr, week_day, type) %>% 
+  summarise(call_count = n()) %>% 
+  ungroup() %>% 
+  group_by(time_lr, week_day, type) %>% 
+  summarise(mean_count = mean(call_count)) %>% 
+  ungroup()
 
-# Daily temporal trend graphics.
+# Split data frame into list by type.
+dh_agg_list <- group_split(dh_agg_df, type)
+
+# Heatmap graphic.
+dh_agg_hm_list <- lapply(dh_agg_list, function(x){
+  ggplot(data = x) +
+    geom_tile(mapping = aes(x = time_lr, y = week_day, fill = mean_count)) +
+    theme_void() +
+    theme(legend.position = "none")
+})
+
+# Arrange graphic.
+plot_grid(plotlist = dh_agg_hm_list, ncol = 1)
 
 # Investigate missings in coordinates.
 
