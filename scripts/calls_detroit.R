@@ -1,4 +1,6 @@
 # Load libraries.
+library(nngeo)
+library(cowplot)
 library(readr)
 library(dplyr)
 library(tidyr)
@@ -7,7 +9,8 @@ library(stringr)
 library(lubridate)
 library(treemapify)
 library(ggplot2)
-library(cowplot)
+library(sf)
+
 
 # Useful function.
 `%nin%` <- Negate(`%in%`)
@@ -346,7 +349,7 @@ detroit19_deploy_df <- detroit19_deploy_df %>%
          call_timestamp_lr = round_date(call_timestamp_l, "hour")) %>% 
   separate(col = call_timestamp_lr, into = c("date_lr", "time_lr"), sep = " ", remove = FALSE) %>%
   mutate(week_day = wday(date_lr, label = TRUE, abbr = FALSE),
-         week_day = fct_relevel(week_day, "Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"))
+         week_day = fct_relevel(week_day, "Sunday","Saturday","Friday","Thursday","Wednesday","Tuesday","Monday"))
 
 # Create small example of detroit19_deploy_df for manual viewing.
 mini_df <- detroit19_deploy_df %>% 
@@ -359,7 +362,8 @@ dh_agg_df <- detroit19_deploy_df %>%
   ungroup() %>% 
   group_by(time_lr, week_day, type) %>% 
   summarise(mean_count = mean(call_count)) %>% 
-  ungroup()
+  ungroup() %>% 
+  filter(type != "unclassified")
 
 # Split data frame into list by type.
 dh_agg_list <- group_split(dh_agg_df, type)
@@ -368,16 +372,106 @@ dh_agg_list <- group_split(dh_agg_df, type)
 dh_agg_hm_list <- lapply(dh_agg_list, function(x){
   ggplot(data = x) +
     geom_tile(mapping = aes(x = time_lr, y = week_day, fill = mean_count)) +
-    theme_void() +
-    theme(legend.position = "none")
+    scale_x_discrete(labels = 1:24) +
+    scale_fill_continuous(guide = "colourbar") +
+    guides(fill = guide_colourbar(barwidth = 0.5, barheight = 4)) +
+    labs(fill = NULL, x = NULL, y = NULL) +
+    theme(legend.text = element_text(size = 5),
+          axis.text   = element_text(size = 6), 
+          legend.text.align = 0.5)
 })
 
-# Arrange graphic.
-plot_grid(plotlist = dh_agg_hm_list, ncol = 1)
+# Arrange and annotate graphic.
+plot_grid(plotlist = dh_agg_hm_list,
+          ncol = 1,
+          labels = unique(dh_agg_df$type),
+          label_size = 8, label_fontface = "bold",
+          hjust = 0.5, label_x = 0.5,
+          scale = 0.9) +
+  theme(plot.margin = unit(c(0,0,0.2,0), "cm")) +
+  annotate(geom = "text", label = "hours of the day", 
+           x = 0.5, y = 0, size = 3)
+
+# Save.
+ggsave(filename = "visuals/detroit_dh.png", height = 20, width = 20, unit = "cm", dpi = 300)
 
 # Investigate missings in coordinates.
+sum(is.na(detroit19_deploy_df$latitude))  # 0
+sum(is.na(detroit19_deploy_df$longitude)) # 0
 
-# Load in boundaries of Detroit.
+# Check sample of incidents. We get spurious coordinates. Clip needed.
+set.seed(1612)
+detroit19_deploy_df %>% 
+  sample_n(size = 1000) %>% 
+  st_as_sf(coords = c(x = "longitude", y = "latitude"), crs = 4326) %>% 
+  st_transform(2253) %>%  
+  ggplot() +
+  geom_sf()
+
+# Load in nhood boundaries of Detroit. Shapefile downloaded from https://data.detroitmi.gov/datasets/current-city-of-detroit-neighborhoods/explore?location=42.352721%2C-83.099208%2C11.13.
+detroit_sf <- st_read("data/Current_City_of_Detroit_Neighborhoods.shp")
+
+# Transform CRS.
+detroit_sf <- detroit_sf %>% 
+  st_transform(2253)
+
+# Create cfs sf object and transform.
+detroit19_deploy_sf <- detroit19_deploy_df %>% 
+  st_as_sf(coords = c(x = "longitude", y = "latitude"), crs = 4326) %>% 
+  st_transform(2253) 
+
+# Dissolve nhood boundaries as best we can.
+diss_df <- detroit_sf %>% 
+  mutate(n = 1) %>% 
+  group_by(n) %>% 
+  summarise(detroit = 1) %>% 
+  ungroup()
+
+# Remove holes. Note the legitimate hole for Highland Park + Hamtramck.
+detroit_uni_sf <- st_remove_holes(diss_df, max_area = 0)
+
+# Clip incident points to the Detroit boundary.
+detroit19_deploy_clip_sf <- detroit19_deploy_sf %>% 
+  st_intersection(detroit_uni_sf)
+
+# Buffer boundary and then create 1000x1000ft grid over Detroit. Buffer ensures that
+# the grid does not miss incidents on the outskirts of the boundary.
+detroit_grid_sf <- detroit_uni_sf %>% 
+  st_buffer(dist = 1000) %>% 
+  st_make_grid(cellsize = 1000) %>% 
+  st_as_sf()
+
+# Split incident sf object into list.
+detroit19_deploy_clip_list <- detroit19_deploy_clip_sf %>% 
+  filter(type != "unclassified") %>% 
+  group_split(type)
+
+# Temp method: create list of the duplicate grid sf objects to match.
+grids_list <- c(detroit_grid_sf, detroit_grid_sf, detroit_grid_sf,
+                detroit_grid_sf, detroit_grid_sf, detroit_grid_sf)
+
+# Create point to polygon function.
+p2p_fun <- function(x, y){
+  x %>% 
+    st_as_sf() %>% 
+    mutate(call_count = lengths(st_intersects(x, y)))
+}
+
+# Run p2p through list of different types.
+detroit19_grid_list <- purrr::map2(grids_list, detroit19_deploy_clip_list, p2p_fun)
+
+# Generate maps of incident counts by type.
+grid_maps_list <- lapply(detroit19_grid_list, function(x){
+  ggplot(data = x) +
+    geom_sf(mapping = aes(fill = call_count), colour = "transparent") +
+    theme_void() 
+})
+
+# Arrange maps.
+plot_grid(plotlist = grid_maps_list, ncol = 2)
+
+# Save grid for QGIS exploration.
+st_write(obj = detroit19_grid_list[[6]], dsn = "data/grid.shp")
 
 # Create 100x100 metre grid cell over the city.
 
