@@ -4,6 +4,7 @@ library(cowplot)
 library(readr)
 library(dplyr)
 library(tidyr)
+library(purrr)
 library(forcats)
 library(stringr)
 library(lubridate)
@@ -322,9 +323,9 @@ ggplot(mapping = aes(area = prop_time, label = calldescription2, subgroup = type
   geom_treemap(fill = "snow", colour = "lightgrey", size = 2, alpha = 0.5) +
   geom_treemap_text(padding.y = unit(0.3, "cm"), grow = FALSE, family = "serif", ) +
   geom_treemap_subgroup_text(padding.y = unit(0.3, "cm"), , place = "bottomleft", colour = "black", size = 48, family = "serif") +
-  geom_treemap_subgroup_border(colour = "dodgerblue2", size = 4) +
+  geom_treemap_subgroup_border(colour = "dodgerblue3", size = 4) +
   theme(legend.position = "none",
-        panel.border  = element_rect(colour = "dodgerblue2", fill = "transparent", size = 2.5)) 
+        panel.border  = element_rect(colour = "dodgerblue3", fill = "transparent", size = 2.5)) 
 
 # Save.
 ggsave(filename = "visuals/demand_time.png", height = 40, width = 60, unit = "cm", dpi = 300)
@@ -373,9 +374,10 @@ dh_agg_hm_list <- lapply(dh_agg_list, function(x){
   ggplot(data = x) +
     geom_tile(mapping = aes(x = time_lr, y = week_day, fill = mean_count)) +
     scale_x_discrete(labels = 1:24) +
-    scale_fill_continuous(guide = "colourbar") +
+    scale_fill_continuous(guide = "colourbar", low = "snow", high = "dodgerblue3") +
     guides(fill = guide_colourbar(barwidth = 0.5, barheight = 4)) +
     labs(fill = NULL, x = NULL, y = NULL) +
+    theme_minimal() +
     theme(legend.text = element_text(size = 5),
           axis.text   = element_text(size = 6), 
           legend.text.align = 0.5)
@@ -399,14 +401,46 @@ ggsave(filename = "visuals/detroit_dh.png", height = 20, width = 20, unit = "cm"
 sum(is.na(detroit19_deploy_df$latitude))  # 0
 sum(is.na(detroit19_deploy_df$longitude)) # 0
 
-# Check sample of incidents. We get spurious coordinates. Clip needed.
+# Unique values.
+duplicate_coords_df <- detroit19_deploy_df %>% 
+  distinct(latitude, longitude)
+
+length(unique(detroit19_deploy_df$longitude)) # 18650
+length(unique(detroit19_deploy_df$latitude))  # 18650
+
+length(unique(duplicate_coords_df$longitude)) # 18650
+length(unique(duplicate_coords_df$latitude))  # 18650
+
+# Conclusion: Only 18650 unique locations out of 700k incidents.
+
+# Check sample of incidents.
 set.seed(1612)
-detroit19_deploy_df %>% 
-  sample_n(size = 1000) %>% 
+
+detroit_sample_sf <- detroit19_deploy_df %>% 
+  filter(type == "traffic") %>% 
+  sample_n(size = 10000) %>% 
   st_as_sf(coords = c(x = "longitude", y = "latitude"), crs = 4326) %>% 
-  st_transform(2253) %>%  
-  ggplot() +
+  st_transform(2253)
+
+# We get spurious coordinates. Clip needed.
+ggplot(data = detroit_sample_sf) +
   geom_sf()
+
+# Save csv for exploration in QGIS. I know retrospectively that there is a spurious hotspot,
+# which is ~wasteland, likely due to unknown locations being geocoded to a specific street.
+detroit_sample_sf %>% 
+  as_tibble() %>% 
+  write_csv(file = "data/detroit_sample.csv")
+
+# This makes it clear that (most) incidents for which the location is not known are geocoded
+# to a specific location (-83.111560213, 42.3003668800001).
+
+# What percentage of incidents have a *known* location? Defined as known zipcode. The coordinate above
+# does not have a zipcode allocated.
+detroit19_deploy_known_df <- detroit19_deploy_df %>% 
+  drop_na(zip_code)
+
+nrow(detroit19_deploy_known_df)/nrow(detroit19_deploy_df) # 95% are 'known'. Proceed with these.
 
 # Load in nhood boundaries of Detroit. Shapefile downloaded from https://data.detroitmi.gov/datasets/current-city-of-detroit-neighborhoods/explore?location=42.352721%2C-83.099208%2C11.13.
 detroit_sf <- st_read("data/Current_City_of_Detroit_Neighborhoods.shp")
@@ -416,7 +450,7 @@ detroit_sf <- detroit_sf %>%
   st_transform(2253)
 
 # Create cfs sf object and transform.
-detroit19_deploy_sf <- detroit19_deploy_df %>% 
+detroit19_deploy_known_sf <- detroit19_deploy_known_df %>% 
   st_as_sf(coords = c(x = "longitude", y = "latitude"), crs = 4326) %>% 
   st_transform(2253) 
 
@@ -431,7 +465,7 @@ diss_df <- detroit_sf %>%
 detroit_uni_sf <- st_remove_holes(diss_df, max_area = 0)
 
 # Clip incident points to the Detroit boundary.
-detroit19_deploy_clip_sf <- detroit19_deploy_sf %>% 
+detroit19_deploy_clip_sf <- detroit19_deploy_known_sf %>% 
   st_intersection(detroit_uni_sf)
 
 # Buffer boundary and then create 1000x1000ft grid over Detroit. Buffer ensures that
@@ -446,37 +480,38 @@ detroit19_deploy_clip_list <- detroit19_deploy_clip_sf %>%
   filter(type != "unclassified") %>% 
   group_split(type)
 
-# Temp method: create list of the duplicate grid sf objects to match.
+# Create list of the duplicate grid sf objects to match. Not ideal!
 grids_list <- c(detroit_grid_sf, detroit_grid_sf, detroit_grid_sf,
                 detroit_grid_sf, detroit_grid_sf, detroit_grid_sf)
 
-# Create point to polygon function.
+# Create point (incidents) to polygon (grids) function.
 p2p_fun <- function(x, y){
   x %>% 
     st_as_sf() %>% 
     mutate(call_count = lengths(st_intersects(x, y)))
 }
 
-# Run p2p through list of different types.
-detroit19_grid_list <- purrr::map2(grids_list, detroit19_deploy_clip_list, p2p_fun)
+# Run p2p through lists of incidents and duplicate grids.
+detroit19_grid_list <- map2(grids_list, detroit19_deploy_clip_list, p2p_fun)
 
 # Generate maps of incident counts by type.
 grid_maps_list <- lapply(detroit19_grid_list, function(x){
-  ggplot(data = x) +
-    geom_sf(mapping = aes(fill = call_count), colour = "transparent") +
+  ggplot() +
+    geom_sf(data = x, mapping = aes(fill = call_count), colour = "transparent") +
+    geom_sf(data = detroit_uni_sf, fill = "transparent") +
+    scale_fill_continuous(guide = "colourbar", low = "snow", high = "dodgerblue3", n.breaks = 5) +
+    labs(fill = NULL) +
+    guides(fill = guide_colourbar(barwidth = 0.5, barheight = 12)) +
     theme_void() 
 })
 
 # Arrange maps.
-plot_grid(plotlist = grid_maps_list, ncol = 2)
+plot_grid(plotlist = grid_maps_list,
+          ncol = 2,
+          labels = unique(dh_agg_df$type),
+          label_size = 8, label_fontface = "bold",
+          hjust = 0.5, label_x = 0.5,
+          scale = 1)
 
-# Save grid for QGIS exploration.
-st_write(obj = detroit19_grid_list[[6]], dsn = "data/grid.shp")
-
-# Create 100x100 metre grid cell over the city.
-
-# Aggregate points to cells by broad category.
-
-# Spatial patterning graphics.
-
-
+# Save.
+ggsave(filename = "visuals/detroit_maps.png", height = 30, width = 30, unit = "cm", dpi = 300)
