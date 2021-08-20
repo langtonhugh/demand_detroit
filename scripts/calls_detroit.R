@@ -84,7 +84,7 @@ detroit19_deploy_df <- detroit19_deploy_df %>%
          calldescription2 = if_else(str_detect(calldescription, "AUTO X")                                  ,"AUTO ACCIDENT"              , calldescription2),
          calldescription2 = if_else(str_detect(calldescription, "ASSAULT AND BATTERY")                     ,"ASSAULT & BATTERY"          , calldescription2),
          calldescription2 = if_else(str_detect(calldescription, "ASSAULT DANGEROUSOR SERIOUS|ASSAULT OR")  ,"OTHER ASSAULT"              , calldescription2),
-         calldescription2 = if_else(str_detect(calldescription,"FELONIOUS ASSAULT")                        ,"FELONIOUS ASSAULT"          , calldescription2),
+         calldescription2 = if_else(str_detect(calldescription, "FELONIOUS ASSAULT")                       ,"FELONIOUS ASSAULT"          , calldescription2),
          calldescription2 = if_else(str_detect(calldescription, "OVERDOSE|DRUG OD")                        ,"OVERDOSE"                   , calldescription2),
          calldescription2 = if_else(str_detect(calldescription, "ROBBERY ARMED")                           ,"ARMED ROBBERY"              , calldescription2),
          calldescription2 = if_else(str_detect(calldescription, "ROBBERY NOT ARMED")                       ,"UNARMED ROBBERY"            , calldescription2),
@@ -98,7 +98,7 @@ detroit19_deploy_df <- detroit19_deploy_df %>%
          calldescription2 = if_else(str_detect(calldescription, "NARCOTICS")                               ,"NARCOTICS"                  , calldescription2),
          calldescription2 = if_else(str_detect(calldescription, "LARCENY")                                 ,"LARCENY"                    , calldescription2),
          calldescription2 = if_else(str_detect(calldescription, "RAPE")                                    ,"RAPE"                       , calldescription2),
-         calldescription2 = if_else(str_detect(calldescription, "LEWD AND LASCIVIOUS")                     ,"LEWD & LASCIVIOUS CONDUCT"  , calldescription2),
+         calldescription2 = if_else(str_detect(calldescription, "LEWD AND LASCIVIOUS")                     ,"LEWD & \nLASCIVIOUS \nCONDUCT"  , calldescription2),
          calldescription2 = if_else(str_detect(calldescription, "UDAA")                                    ,"UDAA"                       , calldescription2),
          calldescription2 = if_else(str_detect(calldescription, "AID MOTORIST")                            ,"AID MOTORIST"               , calldescription2),
          calldescription2 = if_else(str_detect(calldescription, "BREAKING AND|BREAKING &")                 ,"BREAK & ENTER AUTO"         , calldescription2),
@@ -164,13 +164,6 @@ detroit_19_times_df <- detroit19_deploy_df %>%
 
 # Check missings.
 sum(is.na(detroit_19_times_df$prop_time)) # 0
-
-# Base graphic.
-detroit_19_times_df %>%
-  filter(prop_time > 0.1) %>% 
-  ggplot(mapping = aes(area = prop_time, label = calldescription2)) +
-  geom_treemap(fill = "snow") +
-  geom_treemap_text()
 
 # Define the category types into vectors for clarity. Used later for recoding.
 health_vec    <- c("MENTAL HEALTH",
@@ -245,7 +238,7 @@ crime_vec     <- c("ARMED ROBBERY",
                    "HOLDING PERSON",
                    "KIDNAPPING",
                    "LARCENY",
-                   "LEWD & LASCIVIOUS CONDUCT",
+                   "LEWD & \nLASCIVIOUS \nCONDUCT",
                    "MALICIOUS DESTRUCTION",
                    "MOLESTATION",
                    "NARCOTICS",
@@ -299,7 +292,7 @@ sum(is.na(detroit_19_times_df)) # 0
 
 # Create 'other' categories, aggregate.
 detroit_19_times_agg_df <- detroit_19_times_df %>%
-  mutate(calldescription2 = if_else(prop_time < 0.1, true  = "OTHER", false = calldescription2)) %>% 
+  mutate(calldescription2 = if_else(prop_time < 0.2, true  = "OTHER", false = calldescription2)) %>% 
   group_by(calldescription2, type) %>% 
   summarise(prop_time  = sum(prop_time),
             prop_count = sum(prop_counts)) %>% 
@@ -316,19 +309,38 @@ detroit_19_times_agg_df %>%
             type_prop_time   = sum(prop_time)) %>% 
   ungroup()
 
+# Create categorical colour scheme for future use. Colourblind friendly.
+# col_vec <- c("#c7e9b4", "#7fcdbb", "#41b6c4", "#1d91c0", "#225ea8", "#0c2c84")
+
 # Demand time graphic.
-detroit_19_times_agg_df %>%
+time_gg <- detroit_19_times_agg_df %>%
   filter(type != "unclassified") %>%
-ggplot(mapping = aes(area = prop_time, label = calldescription2, subgroup = type)) +
+  ggplot(mapping = aes(area = prop_time, label = calldescription2, subgroup = type)) +
   geom_treemap(fill = "snow", colour = "lightgrey", size = 2, alpha = 0.5) +
-  geom_treemap_text(padding.y = unit(0.3, "cm"), grow = FALSE, family = "serif", ) +
-  geom_treemap_subgroup_text(padding.y = unit(0.3, "cm"), , place = "bottomleft", colour = "black", size = 48, family = "serif") +
+  geom_treemap_text(padding.y = unit(0.3, "cm"), grow = FALSE, family = "sans") +
+  # geom_treemap_subgroup_text(padding.y = unit(0.3, "cm"), place = "bottomleft", colour = "black", size = 48, family = "sans") +
   geom_treemap_subgroup_border(colour = "dodgerblue3", size = 4) +
-  theme(legend.position = "none",
-        panel.border  = element_rect(colour = "dodgerblue3", fill = "transparent", size = 2.5)) 
+  theme_void() +
+  theme(panel.border  = element_rect(colour = "dodgerblue3", fill = "transparent", size = 1.5))
+
+time_ann_gg <- time_gg +
+  theme(plot.margin = unit(c(3,3,3,3), "cm")) +
+  coord_cartesian(xlim = c(0,1), ylim = c(0,1), clip = "off") +
+  annotate(geom = "text", label = "crime", family = "sans",
+           size = 16, x = 0.27, y = -0.075) +
+  annotate(geom = "text", label = "traffic", family = "sans",
+           size = 16, x = 0.27, y = 1.08) +
+  annotate(geom = "text", label = "proactive", family = "sans",
+           size = 16, x = 0.85, y = -0.075) +
+  annotate(geom = "text", label = "health", family = "sans",
+           size = 16, x = 0.7, y = 1.08) +
+  annotate(geom = "text", label = "community", family = "sans",
+           size = 16, x = 0.93, y = 1.08) +
+  annotate(geom = "text", label = "quality of life", family = "sans",
+           size = 16, x = 1.07, y = 0.57, angle = 90) 
 
 # Save.
-ggsave(filename = "visuals/demand_time.png", height = 40, width = 60, unit = "cm", dpi = 300)
+ggsave(filename = "visuals/fig1_time_ann.png", height = 42, width = 62, unit = "cm", dpi = 300)
 
 # For further descriptive statsitics, we join the new categories back with the raw data.
 detroit19_deploy_df <- detroit19_deploy_df %>% 
@@ -337,9 +349,9 @@ detroit19_deploy_df <- detroit19_deploy_df %>%
 # Check missings after join.
 sum(is.na(detroit19_deploy_df$prop_counts))
 
-# Recreate other category by type.
+# Recreate other category by type (not used yet).
 detroit19_deploy_df <- detroit19_deploy_df %>%
-  mutate(calldescription2 = if_else(prop_time < 0.1, true  = "OTHER", false = calldescription2))
+  mutate(calldescription2 = if_else(prop_time < 0.2, true  = "OTHER", false = calldescription2))
 
 # Investigate missings in timestamps.
 sum(is.na(detroit19_deploy_df$call_timestamp)) # 0
@@ -378,24 +390,24 @@ dh_agg_hm_list <- lapply(dh_agg_list, function(x){
     guides(fill = guide_colourbar(barwidth = 0.5, barheight = 4)) +
     labs(fill = NULL, x = NULL, y = NULL) +
     theme_minimal() +
-    theme(legend.text = element_text(size = 5),
-          axis.text   = element_text(size = 6), 
+    theme(legend.text = element_text(size = 5, family = "sans"),
+          axis.text   = element_text(size = 6, family = "sans"), 
           legend.text.align = 0.5)
 })
 
 # Arrange and annotate graphic.
-plot_grid(plotlist = dh_agg_hm_list,
-          ncol = 1,
-          labels = unique(dh_agg_df$type),
-          label_size = 8, label_fontface = "bold",
-          hjust = 0.5, label_x = 0.5,
-          scale = 0.9) +
+time_heat_gg <- plot_grid(plotlist = dh_agg_hm_list,
+                          ncol = 1,
+                          labels = unique(dh_agg_df$type),
+                          label_size = 8, label_fontface = "bold", label_fontfamily = "sans",
+                          hjust = 0.5, label_x = 0.5,
+                          scale = 0.9) +
   theme(plot.margin = unit(c(0,0,0.2,0), "cm")) +
-  annotate(geom = "text", label = "hours of the day", 
+  annotate(geom = "text", label = "hours of the day", family = "sans",
            x = 0.5, y = 0, size = 3)
 
 # Save.
-ggsave(filename = "visuals/detroit_dh.png", height = 20, width = 20, unit = "cm", dpi = 300)
+ggsave(filename = "visuals/fig2_time_heat.png", height = 20, width = 20, unit = "cm", dpi = 300)
 
 # Investigate missings in coordinates.
 sum(is.na(detroit19_deploy_df$latitude))  # 0
@@ -410,8 +422,6 @@ length(unique(detroit19_deploy_df$latitude))  # 18650
 
 length(unique(duplicate_coords_df$longitude)) # 18650
 length(unique(duplicate_coords_df$latitude))  # 18650
-
-# Conclusion: Only 18650 unique locations out of 700k incidents.
 
 # Check sample of incidents.
 set.seed(1612)
@@ -433,7 +443,7 @@ detroit_sample_sf %>%
   write_csv(file = "data/detroit_sample.csv")
 
 # This makes it clear that (most) incidents for which the location is not known are geocoded
-# to a specific location (-83.111560213, 42.3003668800001).
+# to a specific arbitrary location (-83.111560213, 42.3003668800001).
 
 # What percentage of incidents have a *known* location? Defined as known zipcode. The coordinate above
 # does not have a zipcode allocated.
@@ -468,10 +478,9 @@ detroit_uni_sf <- st_remove_holes(diss_df, max_area = 0)
 detroit19_deploy_clip_sf <- detroit19_deploy_known_sf %>% 
   st_intersection(detroit_uni_sf)
 
-# Buffer boundary and then create 1000x1000ft grid over Detroit. Buffer ensures that
-# the grid does not miss incidents on the outskirts of the boundary.
+# Create 1000x1000ft grid over Detroit.
 detroit_grid_sf <- detroit_uni_sf %>% 
-  st_buffer(dist = 1000) %>% 
+  # st_buffer(dist = 1000) %>% # To check if grids miss incidents near boundary.
   st_make_grid(cellsize = 1000) %>% 
   st_as_sf()
 
@@ -501,17 +510,18 @@ grid_maps_list <- lapply(detroit19_grid_list, function(x){
     geom_sf(data = detroit_uni_sf, fill = "transparent") +
     scale_fill_continuous(guide = "colourbar", low = "snow", high = "dodgerblue3", n.breaks = 5) +
     labs(fill = NULL) +
-    guides(fill = guide_colourbar(barwidth = 0.5, barheight = 12)) +
-    theme_void() 
+    guides(fill = guide_colourbar(barwidth = 0.5, barheight = 8)) +
+    theme_void() +
+    theme(legend.text = element_text(size = 8, family = "sans"))
 })
 
 # Arrange maps.
-plot_grid(plotlist = grid_maps_list,
-          ncol = 2,
-          labels = unique(dh_agg_df$type),
-          label_size = 8, label_fontface = "bold",
-          hjust = 0.5, label_x = 0.5,
-          scale = 1)
+maps_gg <-  plot_grid(plotlist = grid_maps_list,
+                      ncol = 2,
+                      labels = unique(dh_agg_df$type),
+                      label_size = 12, label_fontface = "bold", label_fontfamily = "sans",
+                      hjust = 0.5, label_x = 0.5,
+                      scale = 1)
 
 # Save.
-ggsave(filename = "visuals/detroit_maps.png", height = 30, width = 30, unit = "cm", dpi = 300)
+ggsave(filename = "visuals/fig3_maps.png", height = 30, width = 30, unit = "cm", dpi = 300)
