@@ -1,21 +1,17 @@
 ---
-title: "Paper summary: police demand and persons with mental ill-health"
-output: html_document
-tags:
-- demand
-- reactive demand
-- mental health
-- calls for service
-- text mining
-date: '2021-28-04'
+title: "Describing the scale and composition of police demand in Detroit."
+output: pdf_document
+header-includes:
+  - \usepackage{lscape}
 ---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F, message=F, comment=F, warning=F)
+```
 
 ## Police demand
 
 There is a common misconception that police spend most of their time responding to and dealing with crime. Instead, the evidence suggests that public demand for police services originates from a diverse array of incidents -- many of which involve vulnerable people and require specific training and numerous
-
-
-
 
 Estimating the scale of demand of police services is not a simple task, particularly when it comes to complex sources of demand, such as those originating from persons with mental ill-health. One common method has been to use emergency calls for service data. For instance, we can say _how many_ emergency calls were classified as involving mental ill-health in any given time period. We can take this one step further by calculating the _amount of time_ police spend dealing with such incidents. We can then make claims such as: "Police officers spend x% of their time responding to and resolving incidents involving mental ill-health". 
 
@@ -23,30 +19,23 @@ Estimating the scale of demand of police services is not a simple task, particul
 
 Gathering such evidence -- which simply _describes_ the composition of public demand for the police -- is important for a number of reasons. Among them, it can help guide training to ensure that officers are suitably prepared for their duties, maximising well-being outcomes for the public and mitigating against unnecessary strain on officers. Understanding police demand can also contribute to how funds from central and local governments are decided and distributed to police forces and other public services. This has become particularly pertinent following recent 'defund the police' campaigns. With police performing a variety of non-crime-related duties, any changes to their role will likely have a knock-on effect to other sectors (and vice-versa).
 
-The question which follows is then: how can we measure police demand? Are we measuring it reliabily 
+\newpage
 
-## Mental health
+\begin{landscape}
 
-In a recent paper published in _Policing: A Journal of Policy and Practice_, we focused on describing 
+```{r fig1, fig.align = "center", fig.cap = "Proportional breakdown of deployed time spent on each incident category."}
+knitr::include_graphics("visuals/fig1_time_ann.png")
+```
 
-Police contact with persons experiencing mental ill-health might be the most salient example of these challenges. 
+\end{landscape}
 
+\newpage
 
- Inevitably, this is not straightforward. 
-
-
-
-## Mental health
-
-
-
+```{r fig2, fig.align = "center", fig.cap = "Mean incident counts by day and week by demand type.", out.width = "\\textwidth"}
+knitr::include_graphics("visuals/fig2_time_heat.png")
+```
 
 
-
-Since my article in The Conversation, I have become increasingly intrigued by the complexities of understanding and measuring police demand. This has largely driven by some of the amazing research that has been published in recent years (see readings below). 
-
-In many countries, one such demand type is particularly concerning; those originating from incidents involving people with mental ill-health. In England and Wales, forces have reported that around 2% of incidents relate to mental health, but this is widely understood to be an **underestimate** due to inconsistencies in how incidents are flagged. Not only this, but the proportion of emergency calls for service does not necessarily reflect the **time** police actually consume dealing with such incidents.
-
-These two issues represented a key motivation for the study. We sought to (1) provide an improved, data-driven estimate of the proportion of calls for service involving mental ill-health, and (2) estimate the amount of time officers spend resolving such incidents.
-
-
+```{r fig3, fig.align = "center", fig.cap = "Spatial patterning of total incident counts by demand type.", out.width = "\\textwidth"}
+knitr::include_graphics("visuals/fig3_maps.png")
+```

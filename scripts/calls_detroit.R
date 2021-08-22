@@ -352,7 +352,7 @@ time_ann_gg <- time_gg +
   annotate(geom = "text", label = "community", family = "sans",
            size = 16, x = 0.93, y = 1.08) +
   annotate(geom = "text", label = "quality of life", family = "sans",
-           size = 16, x = 1.07, y = 0.57, angle = 90) 
+           size = 16, x = 1.07, y = 0.57, angle = -90) 
 
 # Save.
 ggsave(filename = "visuals/fig1_time_ann.png", height = 42, width = 62, unit = "cm", dpi = 300)
