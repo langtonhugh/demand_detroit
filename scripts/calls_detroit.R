@@ -151,6 +151,12 @@ calldesc2_df <- detroit19_deploy_df %>%
   distinct() %>% 
   arrange(calldescription)
 
+# Save for reader reference.
+calldesc2_df %>% 
+  rename(calldescription_original = calldescription,
+         calldescription_new      = calldescription2) %>% 
+write_csv(file = "results/categorisation_summary.csv")
+
 # Aggregate.
 detroit_19_times_df <- detroit19_deploy_df %>% 
   group_by(calldescription2) %>% 
@@ -290,11 +296,12 @@ detroit_19_times_df <- detroit_19_times_df %>%
 # Check missings.
 sum(is.na(detroit_19_times_df)) # 0
 
-# Create 'other' categories, aggregate.
+# Create 'other' categories for incident <0.2% deployed time, then aggregate.
 detroit_19_times_agg_df <- detroit_19_times_df %>%
   mutate(calldescription2 = if_else(prop_time < 0.2, true  = "OTHER", false = calldescription2)) %>% 
   group_by(calldescription2, type) %>% 
-  summarise(prop_time  = sum(prop_time),
+  summarise(freq       = sum(sum_counts),
+            prop_time  = sum(prop_time),
             prop_count = sum(prop_counts)) %>% 
   ungroup() %>% 
   arrange(type)
@@ -303,14 +310,22 @@ detroit_19_times_agg_df <- detroit_19_times_df %>%
 sum(is.na(detroit_19_times_agg_df)) # 0
 
 # Descriptive stats. 
-detroit_19_times_agg_df %>% 
+des_stats_df <- detroit_19_times_agg_df %>% 
   group_by(type) %>% 
-  summarise(type_prop_count  = sum(prop_count),
-            type_prop_time   = sum(prop_time)) %>% 
+  summarise(`Frequency`       = sum(freq),
+            `Percentage`      = round(sum(prop_count), 2),
+            `Percentage time` = round(sum(prop_time ), 2)) %>%
+  rename(`Demand category` = type) %>% 
   ungroup()
+
+# Save.
+write_csv(x = des_stats_df, file = "results/des_stats.csv")
 
 # Create categorical colour scheme for future use. Colourblind friendly.
 # col_vec <- c("#c7e9b4", "#7fcdbb", "#41b6c4", "#1d91c0", "#225ea8", "#0c2c84")
+
+# Save data used for proportional breakdown.
+write_csv(x = detroit_19_times_agg_df, file = "results/prop_breakdown.csv")
 
 # Demand time graphic.
 time_gg <- detroit_19_times_agg_df %>%
