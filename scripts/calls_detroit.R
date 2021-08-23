@@ -79,10 +79,10 @@ detroit19_deploy_df <- detroit19_deploy_df %>%
   mutate(calldescription2 = if_else(str_detect(calldescription, "DV")                                      ,"DOMESTIC INCIDENT"          , calldescription),
          calldescription2 = if_else(str_detect(calldescription, "MENTAL")                                  ,"MENTAL HEALTH"              , calldescription2),
          calldescription2 = if_else(str_detect(calldescription, "SUICIDE")                                 ,"SUICIDE OR SUICIDE THREAT"  , calldescription2),
-         calldescription2 = if_else(str_detect(calldescription, "HIT & RUN|HIT& RUN|H&R")                  ,"HIT & RUN"                  , calldescription2),
+         calldescription2 = if_else(str_detect(calldescription, "HIT & RUN|HIT& RUN|H&R")                  ,"HIT AND RUN"                  , calldescription2),
          calldescription2 = if_else(str_detect(calldescription, "LOST PROPERTY|RECOVERED / FOUND PROPERTY"),"LOST PROPERTY"              , calldescription2),
          calldescription2 = if_else(str_detect(calldescription, "AUTO X")                                  ,"AUTO ACCIDENT"              , calldescription2),
-         calldescription2 = if_else(str_detect(calldescription, "ASSAULT AND BATTERY")                     ,"ASSAULT & BATTERY"          , calldescription2),
+         calldescription2 = if_else(str_detect(calldescription, "ASSAULT AND BATTERY")                     ,"ASSAULT AND BATTERY"          , calldescription2),
          calldescription2 = if_else(str_detect(calldescription, "ASSAULT DANGEROUSOR SERIOUS|ASSAULT OR")  ,"OTHER ASSAULT"              , calldescription2),
          calldescription2 = if_else(str_detect(calldescription, "FELONIOUS ASSAULT")                       ,"FELONIOUS ASSAULT"          , calldescription2),
          calldescription2 = if_else(str_detect(calldescription, "OVERDOSE|DRUG OD")                        ,"OVERDOSE"                   , calldescription2),
@@ -98,10 +98,10 @@ detroit19_deploy_df <- detroit19_deploy_df %>%
          calldescription2 = if_else(str_detect(calldescription, "NARCOTICS")                               ,"NARCOTICS"                  , calldescription2),
          calldescription2 = if_else(str_detect(calldescription, "LARCENY")                                 ,"LARCENY"                    , calldescription2),
          calldescription2 = if_else(str_detect(calldescription, "RAPE")                                    ,"RAPE"                       , calldescription2),
-         calldescription2 = if_else(str_detect(calldescription, "LEWD AND LASCIVIOUS")                     ,"LEWD & \nLASCIVIOUS \nCONDUCT"  , calldescription2),
+         calldescription2 = if_else(str_detect(calldescription, "LEWD AND LASCIVIOUS")                     ,"LEWD AND LASCIVIOUS CONDUCT"  , calldescription2),
          calldescription2 = if_else(str_detect(calldescription, "UDAA")                                    ,"UDAA"                       , calldescription2),
          calldescription2 = if_else(str_detect(calldescription, "AID MOTORIST")                            ,"AID MOTORIST"               , calldescription2),
-         calldescription2 = if_else(str_detect(calldescription, "BREAKING AND|BREAKING &")                 ,"BREAK & ENTER AUTO"         , calldescription2),
+         calldescription2 = if_else(str_detect(calldescription, "BREAKING AND|BREAKING &")                 ,"BREAK AND ENTER AUTO"         , calldescription2),
          calldescription2 = if_else(str_detect(calldescription, "PPO VIOLATION")                           ,"PPO VIOLATION"              , calldescription2),
          calldescription2 = if_else(str_detect(calldescription, "WNTD WRRNT|EXECUTE SEARCH WARRANT")       ,"WARRANT"                    , calldescription2),
          calldescription2 = if_else(str_detect(calldescription, "MALICIOUS DESTRUCTION")                   ,"MALICIOUS DESTRUCTION"      , calldescription2),
@@ -228,10 +228,10 @@ comm_vec      <- c("ALARM MALFUNCTION OR MISUSE",
 
 crime_vec     <- c("ARMED ROBBERY",
                    "ARSON",
-                   "ASSAULT & BATTERY",
+                   "ASSAULT AND BATTERY",
                    "ATM OR BANK ALARM",
                    "BOMB THREAT",
-                   "BREAK & ENTER AUTO",
+                   "BREAK AND ENTER AUTO",
                    "BURGLAR ALARM",
                    "BURGLARY",
                    "CHILD OR ADULT ABUSE",
@@ -240,11 +240,11 @@ crime_vec     <- c("ARMED ROBBERY",
                    "FELONIOUS ASSAULT",
                    "FRAUD",
                    "HARASSMENT",
-                   "HIT & RUN",
+                   "HIT AND RUN",
                    "HOLDING PERSON",
                    "KIDNAPPING",
                    "LARCENY",
-                   "LEWD & \nLASCIVIOUS \nCONDUCT",
+                   "LEWD AND LASCIVIOUS CONDUCT",
                    "MALICIOUS DESTRUCTION",
                    "MOLESTATION",
                    "NARCOTICS",
@@ -327,35 +327,59 @@ write_csv(x = des_stats_df, file = "results/des_stats.csv")
 # Save data used for proportional breakdown.
 write_csv(x = detroit_19_times_agg_df, file = "results/prop_breakdown.csv")
 
+# Create label variable with line break between words. This for visual purposes only.
+detroit_19_times_agg_df <- detroit_19_times_agg_df %>% 
+  mutate(calldescription2_labs = str_replace_all(string = calldescription2, pattern = " ", replacement = "\n"))
+
 # Demand time graphic.
 time_gg <- detroit_19_times_agg_df %>%
   filter(type != "unclassified") %>%
-  ggplot(mapping = aes(area = prop_time, label = calldescription2, subgroup = type)) +
-  geom_treemap(fill = "snow", colour = "lightgrey", size = 2, alpha = 0.5) +
+  ggplot(mapping = aes(area = prop_time, label = calldescription2_labs, subgroup = type)) +
+  geom_treemap(fill = "snow", colour = "darkgrey", size = 2, alpha = 0.5) +
   geom_treemap_text(padding.y = unit(0.3, "cm"), grow = FALSE, family = "sans") +
-  # geom_treemap_subgroup_text(padding.y = unit(0.3, "cm"), place = "bottomleft", colour = "black", size = 48, family = "sans") +
   geom_treemap_subgroup_border(colour = "dodgerblue3", size = 4) +
   theme_void() +
   theme(panel.border  = element_rect(colour = "dodgerblue3", fill = "transparent", size = 1.5))
 
+# Portrait version annotations.
 time_ann_gg <- time_gg +
   theme(plot.margin = unit(c(3,3,3,3), "cm")) +
   coord_cartesian(xlim = c(0,1), ylim = c(0,1), clip = "off") +
-  annotate(geom = "text", label = "crime", family = "sans",
-           size = 16, x = 0.27, y = -0.075) +
-  annotate(geom = "text", label = "traffic", family = "sans",
-           size = 16, x = 0.27, y = 1.08) +
+  annotate(geom = "text", label = "crime"    , family = "sans",
+           size = 9, x = 0.27, y = -0.065) +
+  annotate(geom = "text", label = "traffic"  , family = "sans",
+           size = 9, x = 0.27, y = 1.065) +
   annotate(geom = "text", label = "proactive", family = "sans",
-           size = 16, x = 0.85, y = -0.075) +
-  annotate(geom = "text", label = "health", family = "sans",
-           size = 16, x = 0.7, y = 1.08) +
+           size = 9, x = 0.85, y = -0.065) +
+  annotate(geom = "text", label = "health"   , family = "sans",
+           size = 9, x = 0.7, y = 1.065) +
   annotate(geom = "text", label = "community", family = "sans",
-           size = 16, x = 0.93, y = 1.08) +
+           size = 9, x = 0.93, y = 1.065) +
   annotate(geom = "text", label = "quality of life", family = "sans",
-           size = 16, x = 1.07, y = 0.57, angle = -90) 
+           size = 9, x = 1.075, y = 0.58, angle = -90)
+
+# Save portrait version.
+ggsave(filename = "visuals/fig1_time_port.png", height = 48, width = 40, unit = "cm", dpi = 300)
+
+# Landscape version annotations.
+# time_ann_gg <- time_gg +
+#   theme(plot.margin = unit(c(3,3,3,3), "cm")) +
+#   coord_cartesian(xlim = c(0,1), ylim = c(0,1), clip = "off") +
+#   annotate(geom = "text", label = "crime", family = "sans",
+#            size = 16, x = 0.27, y = -0.075) +
+#   annotate(geom = "text", label = "traffic", family = "sans",
+#            size = 16, x = 0.27, y = 1.08) +
+#   annotate(geom = "text", label = "proactive", family = "sans",
+#            size = 16, x = 0.85, y = -0.075) +
+#   annotate(geom = "text", label = "health", family = "sans",
+#            size = 16, x = 0.7, y = 1.08) +
+#   annotate(geom = "text", label = "community", family = "sans",
+#            size = 16, x = 0.93, y = 1.08) +
+#   annotate(geom = "text", label = "quality of life", family = "sans",
+#            size = 16, x = 1.07, y = 0.57, angle = -90)
 
 # Save.
-ggsave(filename = "visuals/fig1_time_ann.png", height = 42, width = 62, unit = "cm", dpi = 300)
+# ggsave(filename = "visuals/fig1_time_land.png", height = 42, width = 62, unit = "cm", dpi = 300)
 
 # For further descriptive statsitics, we join the new categories back with the raw data.
 detroit19_deploy_df <- detroit19_deploy_df %>% 
