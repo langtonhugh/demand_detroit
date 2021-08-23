@@ -311,15 +311,16 @@ sum(is.na(detroit_19_times_agg_df)) # 0
 
 # Descriptive stats. 
 des_stats_df <- detroit_19_times_agg_df %>% 
+  # mutate(type = str_to_title(type)) %>% 
   group_by(type) %>% 
-  summarise(`Frequency`       = sum(freq),
-            `Percentage`      = round(sum(prop_count), 2),
-            `Percentage time` = round(sum(prop_time ), 2)) %>%
-  rename(`Demand category` = type) %>% 
+  summarise(`Count`      = sum(freq),
+            `Count (%)`  = round(sum(prop_count), 2),
+            `Time (%)`   = round(sum(prop_time ), 2)) %>%
+  rename(`Demand type` = type) %>% 
   ungroup()
 
 # Save.
-write_csv(x = des_stats_df, file = "results/des_stats.csv")
+write_csv(x = des_stats_df, file = "results/table1_des_stats.csv")
 
 # Create categorical colour scheme for future use. Colourblind friendly.
 # col_vec <- c("#c7e9b4", "#7fcdbb", "#41b6c4", "#1d91c0", "#225ea8", "#0c2c84")
@@ -336,7 +337,7 @@ time_gg <- detroit_19_times_agg_df %>%
   filter(type != "unclassified") %>%
   ggplot(mapping = aes(area = prop_time, label = calldescription2_labs, subgroup = type)) +
   geom_treemap(fill = "snow", colour = "darkgrey", size = 2, alpha = 0.5) +
-  geom_treemap_text(padding.y = unit(0.3, "cm"), grow = FALSE, family = "sans") +
+  geom_treemap_text(padding.y = unit(0.3, "cm"), grow = FALSE) +
   geom_treemap_subgroup_border(colour = "dodgerblue3", size = 4) +
   theme_void() +
   theme(panel.border  = element_rect(colour = "dodgerblue3", fill = "transparent", size = 1.5))
@@ -345,17 +346,17 @@ time_gg <- detroit_19_times_agg_df %>%
 time_ann_gg <- time_gg +
   theme(plot.margin = unit(c(3,3,3,3), "cm")) +
   coord_cartesian(xlim = c(0,1), ylim = c(0,1), clip = "off") +
-  annotate(geom = "text", label = "crime"    , family = "sans",
+  annotate(geom = "text", label = "crime"    ,
            size = 9, x = 0.27, y = -0.065) +
-  annotate(geom = "text", label = "traffic"  , family = "sans",
+  annotate(geom = "text", label = "traffic"  ,
            size = 9, x = 0.27, y = 1.065) +
-  annotate(geom = "text", label = "proactive", family = "sans",
+  annotate(geom = "text", label = "proactive",
            size = 9, x = 0.85, y = -0.065) +
-  annotate(geom = "text", label = "health"   , family = "sans",
+  annotate(geom = "text", label = "health"   ,
            size = 9, x = 0.7, y = 1.065) +
-  annotate(geom = "text", label = "community", family = "sans",
+  annotate(geom = "text", label = "community", 
            size = 9, x = 0.93, y = 1.065) +
-  annotate(geom = "text", label = "quality of life", family = "sans",
+  annotate(geom = "text", label = "quality of life",
            size = 9, x = 1.075, y = 0.58, angle = -90)
 
 # Save portrait version.
@@ -365,17 +366,17 @@ ggsave(filename = "visuals/fig1_time_port.png", height = 48, width = 40, unit = 
 # time_ann_gg <- time_gg +
 #   theme(plot.margin = unit(c(3,3,3,3), "cm")) +
 #   coord_cartesian(xlim = c(0,1), ylim = c(0,1), clip = "off") +
-#   annotate(geom = "text", label = "crime", family = "sans",
+#   annotate(geom = "text", label = "crime",
 #            size = 16, x = 0.27, y = -0.075) +
-#   annotate(geom = "text", label = "traffic", family = "sans",
+#   annotate(geom = "text", label = "traffic",
 #            size = 16, x = 0.27, y = 1.08) +
-#   annotate(geom = "text", label = "proactive", family = "sans",
+#   annotate(geom = "text", label = "proactive",
 #            size = 16, x = 0.85, y = -0.075) +
-#   annotate(geom = "text", label = "health", family = "sans",
+#   annotate(geom = "text", label = "health",
 #            size = 16, x = 0.7, y = 1.08) +
-#   annotate(geom = "text", label = "community", family = "sans",
+#   annotate(geom = "text", label = "community",
 #            size = 16, x = 0.93, y = 1.08) +
-#   annotate(geom = "text", label = "quality of life", family = "sans",
+#   annotate(geom = "text", label = "quality of life",
 #            size = 16, x = 1.07, y = 0.57, angle = -90)
 
 # Save.
@@ -429,8 +430,8 @@ dh_agg_hm_list <- lapply(dh_agg_list, function(x){
     guides(fill = guide_colourbar(barwidth = 0.5, barheight = 4)) +
     labs(fill = NULL, x = NULL, y = NULL) +
     theme_minimal() +
-    theme(legend.text = element_text(size = 5, family = "sans"),
-          axis.text   = element_text(size = 6, family = "sans"), 
+    theme(legend.text = element_text(size = 5),
+          axis.text   = element_text(size = 6), 
           legend.text.align = 0.5)
 })
 
@@ -438,12 +439,12 @@ dh_agg_hm_list <- lapply(dh_agg_list, function(x){
 time_heat_gg <- plot_grid(plotlist = dh_agg_hm_list,
                           ncol = 1,
                           labels = unique(dh_agg_df$type),
-                          label_size = 8, label_fontface = "bold", label_fontfamily = "sans",
+                          label_size = 8, label_fontface = "plain",
                           hjust = 0.5, label_x = 0.5,
                           scale = 0.9) +
   theme(plot.margin = unit(c(0,0,0.2,0), "cm")) +
-  annotate(geom = "text", label = "hours of the day", family = "sans",
-           x = 0.5, y = 0, size = 3)
+  annotate(geom = "text", label = "hours of the day",
+           x = 0.5, y = 0, size = 2)
 
 # Save.
 ggsave(filename = "visuals/fig2_time_heat.png", height = 20, width = 20, unit = "cm", dpi = 300)
@@ -551,14 +552,14 @@ grid_maps_list <- lapply(detroit19_grid_list, function(x){
     labs(fill = NULL) +
     guides(fill = guide_colourbar(barwidth = 0.5, barheight = 8)) +
     theme_void() +
-    theme(legend.text = element_text(size = 8, family = "sans"))
+    theme(legend.text = element_text(size = 8))
 })
 
 # Arrange maps.
 maps_gg <-  plot_grid(plotlist = grid_maps_list,
                       ncol = 2,
                       labels = unique(dh_agg_df$type),
-                      label_size = 12, label_fontface = "bold", label_fontfamily = "sans",
+                      label_size = 12, label_fontface = "plain",
                       hjust = 0.5, label_x = 0.5,
                       scale = 1)
 

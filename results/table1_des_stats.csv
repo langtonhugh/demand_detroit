@@ -1,4 +1,4 @@
-Demand category,Frequency,Percentage,Percentage time
+Demand type,Count,Count (%),Time (%)
 community,22092,3.1,5.28
 crime,161085,22.63,35.28
 health,21037,2.96,5.3

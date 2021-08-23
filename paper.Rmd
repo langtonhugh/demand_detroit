@@ -1,39 +1,60 @@
 ---
 title: "Describing the scale and composition of police demand in Detroit."
+author: "Samuel Langton (Netherlands Institute for the Study of Crime and Law Enforcement)"
 output: pdf_document
 header-includes:
   - \usepackage{lscape}
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = F, message=F, comment=F, warning=F)
+knitr::opts_chunk$set(echo = F, message=F, comment=F, warning=F, fig.pos = 'H')
+library(readr)
+library(dplyr)
+library(kableExtra)
 ```
 
-## Police demand
+## Introduction
 
 There is a common misconception that police spend most of their time responding to and dealing with crime. Instead, the evidence suggests that public demand for police services originates from a diverse array of incidents -- many of which involve vulnerable people and require specific training and numerous
+
+## Police demand
 
 Estimating the scale of demand of police services is not a simple task, particularly when it comes to complex sources of demand, such as those originating from persons with mental ill-health. One common method has been to use emergency calls for service data. For instance, we can say _how many_ emergency calls were classified as involving mental ill-health in any given time period. We can take this one step further by calculating the _amount of time_ police spend dealing with such incidents. We can then make claims such as: "Police officers spend x% of their time responding to and resolving incidents involving mental ill-health". 
 
 Gathering such evidence -- which simply _describes_ the composition of public demand for the police -- is important for a number of reasons. Among them, it can help guide training to ensure that officers are suitably prepared for their duties, maximising well-being outcomes for the public and mitigating against unnecessary strain on officers. Understanding police demand can also contribute to how funds from central and local governments are decided and distributed to police forces and other public services. This has become particularly pertinent following recent 'defund the police' campaigns. With police performing a variety of non-crime-related duties, any changes to their role will likely have a knock-on effect to other sectors (and vice-versa).
 
+
 \newpage
-
-<!-- \begin{landscape} -->
-
 ```{r fig1, fig.align = "center", fig.cap = "Proportional breakdown of deployed time spent on each incident category.", out.width = "\\textwidth"}
 knitr::include_graphics("visuals/fig1_time_port.png")
 ```
-
-<!-- \end{landscape} -->
-
 \newpage
 
+```{r table1}
+table1_df <- read_csv("results/table1_des_stats.csv")
+
+kable(table1_df, caption = "Frequency and proportional breakdown (counts and time) for each demand type.",
+      booktabs = T, longtable = T, linesep = "", format = "latex") %>%
+    kable_styling(latex_options = c("striped"),
+                  font_size = 10, full_width = F)
+```
+
+
+
+## Temporal patterning
+
+\newpage
 ```{r fig2, fig.align = "center", fig.cap = "Mean incident counts by day and week, for each demand type.", out.width = "\\textwidth"}
 knitr::include_graphics("visuals/fig2_time_heat.png")
 ```
+\newpage
 
+## Spatial patterning
 
+\newpage
 ```{r fig3, fig.align = "center", fig.cap = "Spatial patterning of total incident counts for each demand type.", out.width = "\\textwidth"}
 knitr::include_graphics("visuals/fig3_maps.png")
 ```
+\newpage
+
+## Conclusion
