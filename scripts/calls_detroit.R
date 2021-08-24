@@ -32,6 +32,9 @@ detroit_df <- detroit_df %>%
   filter(str_detect(call_timestamp, "2019"), # 2019 only.
          officerinitiated == "No")           # exclude officer initiated calls.
 
+# How many?
+
+
 # Date checks.
 detroit_df %>% 
   mutate(year = as.character(str_extract_all(call_timestamp, "^.{4}"))) %>% 
@@ -353,7 +356,7 @@ time_ann_gg <- time_gg +
            size = 9, x = 0.75, y = -0.065) +
   annotate(geom = "text", label = "proactive"      , colour = "dodgerblue4", 
            size = 9, x = 0.62, y = 1.065) +
-  annotate(geom = "text", label = "community"      ,  colour = "dodgerblue4", 
+  annotate(geom = "text", label = "community"      , colour = "dodgerblue4", 
            size = 9, x = 0.92, y = 1.065) +
   annotate(geom = "text", label = "health"         , colour = "dodgerblue4", 
            size = 9, x = 1.073, y = 0.58, angle = -90)
@@ -405,7 +408,7 @@ dh_agg_hm_list <- lapply(dh_agg_list, function(x){
   ggplot(data = x) +
     geom_tile(mapping = aes(x = time_lr, y = week_day, fill = mean_count)) +
     scale_x_discrete(labels = 1:24) +
-    scale_fill_continuous(guide = "colourbar", low = "snow", high = "dodgerblue4") +
+    scale_fill_continuous(guide = "colourbar", low = "snow", high = "dodgerblue3") +
     guides(fill = guide_colourbar(barwidth = 0.5, barheight = 4)) +
     labs(fill = NULL, x = NULL, y = NULL) +
     theme_minimal() +
@@ -526,7 +529,7 @@ grid_maps_list <- lapply(detroit19_grid_list, function(x){
   ggplot() +
     geom_sf(data = x, mapping = aes(fill = call_count), colour = "transparent") +
     geom_sf(data = detroit_uni_sf, fill = "transparent") +
-    scale_fill_continuous(guide = "colourbar", low = "snow", high = "dodgerblue4", n.breaks = 5) +
+    scale_fill_continuous(guide = "colourbar", low = "snow", high = "dodgerblue3", n.breaks = 5) +
     labs(fill = NULL) +
     guides(fill = guide_colourbar(barwidth = 0.5, barheight = 8)) +
     theme_void() +
