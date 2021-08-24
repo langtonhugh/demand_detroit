@@ -1,8 +1,8 @@
 Demand type,Count,Count (%),Time (%)
-community,22092,3.1,5.28
-crime,161085,22.63,35.28
-health,21037,2.96,5.3
-proactive,208415,29.28,16.64
-quality of life,59343,8.34,13.91
-traffic,205508,28.87,20.96
-unclassified,34409,4.83,2.62
+community,14946,5.58,6.36
+crime,116571,43.54,45.72
+health,20269,7.57,7.18
+proactive,18637,6.96,6.89
+quality of life,56541,21.12,18.89
+traffic,33153,12.38,13.11
+unclassified,7620,2.85,1.86

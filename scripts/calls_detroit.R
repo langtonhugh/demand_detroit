@@ -12,7 +12,6 @@ library(treemapify)
 library(ggplot2)
 library(sf)
 
-
 # Useful function.
 `%nin%` <- Negate(`%in%`)
 
@@ -26,9 +25,12 @@ library(sf)
 # Load.
 detroit_df <- read_csv("data/detroit_16_21.csv")
 
-# Subset for 2019. We want pre-COVID.
+# Initial filter.
+sum(is.na(detroit_df$officerinitiated)) # 0
+
 detroit_df <- detroit_df %>% 
-  filter(str_detect(call_timestamp, "2019"))
+  filter(str_detect(call_timestamp, "2019"), # 2019 only.
+         officerinitiated == "No")           # exclude officer initiated calls.
 
 # Date checks.
 detroit_df %>% 
@@ -37,16 +39,13 @@ detroit_df %>%
   summarise(counts = n()) %>% 
   ungroup()
 
-# Check time variables variables.
+# Check time variables variables. Totaltime = totalresponsetime + time_on_scene. Makes sense.
 detroit_df %>% 
   select(calldescription, dispatchtime, traveltime, totalresponsetime, time_on_scene, totaltime)
 
-# Totaltime = totalresponsetime + time_on_scene
-# Makes sense.
-
 # Missings in key variables.
 sum(is.na(detroit_df$calldescription))
-sum(is.na(detroit_df$totaltime)) # ~121k
+sum(is.na(detroit_df$totaltime)) 
 
 # Remove missings, zeros and negatives.
 detroit19_sub_df <- detroit_df %>% 
@@ -57,18 +56,18 @@ detroit19_sub_df <- detroit_df %>%
 ggplot(data = detroit19_sub_df) +
   geom_histogram(mapping = aes(x = totaltime), bins = 30)
 
-# First, filter out calldescriptions which are admin, completely unknown or do not involve deployment.
-# We retain 'REPORT' (or similar e.g. RPT).
+# First, filter out calldescriptions which are admin, completely unknown or do not appear to
+# involve deployment.
 detroit19_deploy_df <- detroit19_sub_df %>%
   filter(calldescription != "REMARKS", 
          calldescription != "START OF SHIFT INFORMATION",
          calldescription != "UNKNOWN PROBLEM",
-         calldescription != "VIRTUAL SPECIAL ATTENTION",
+         calldescription != "VIRTUAL SPECIAL ATTENTION", 
          calldescription != "EMPLOYEE CALL IN / TIME OFF",
          calldescription != "CALL BACK DESK")
 
 # How many categories remain?
-length(unique(detroit19_deploy_df$calldescription)) # 211
+length(unique(detroit19_deploy_df$calldescription)) # 207
 
 # Create df to consult names for suitable recoding.
 calldesc_df <- tibble(calldescription = unique(detroit19_deploy_df$calldescription)) %>% 
@@ -143,7 +142,7 @@ detroit19_deploy_df <- detroit19_deploy_df %>%
          calldescription2 = if_else(calldescription %in% c("EMERGENCY STANDBY", "BE ON THE LOOK OUT")       ,"STAND-BY"                  , calldescription2))
 
 # How many unique categories after recoding?
-length(unique(detroit19_deploy_df$calldescription2)) # 103
+length(unique(detroit19_deploy_df$calldescription2)) # 101
 
 # Create new df to consult recoding.
 calldesc2_df <- detroit19_deploy_df %>% 
@@ -338,49 +337,29 @@ time_gg <- detroit_19_times_agg_df %>%
   ggplot(mapping = aes(area = prop_time, label = calldescription2_labs, subgroup = type)) +
   geom_treemap(fill = "snow", colour = "darkgrey", size = 2, alpha = 0.5) +
   geom_treemap_text(padding.y = unit(0.3, "cm"), grow = FALSE) +
-  geom_treemap_subgroup_border(colour = "dodgerblue3", size = 4) +
+  geom_treemap_subgroup_border(colour = "dodgerblue4", size = 4) +
   theme_void() +
-  theme(panel.border  = element_rect(colour = "dodgerblue3", fill = "transparent", size = 1.5))
+  theme(panel.border  = element_rect(colour = "dodgerblue4", fill = "transparent", size = 1.5))
 
 # Portrait version annotations.
 time_ann_gg <- time_gg +
-  theme(plot.margin = unit(c(3,3,3,3), "cm")) +
+  theme(plot.margin = unit(c(1.5,1.5,1.5,1.5), "cm")) +
   coord_cartesian(xlim = c(0,1), ylim = c(0,1), clip = "off") +
-  annotate(geom = "text", label = "crime"    ,
-           size = 9, x = 0.27, y = -0.065) +
-  annotate(geom = "text", label = "traffic"  ,
-           size = 9, x = 0.27, y = 1.065) +
-  annotate(geom = "text", label = "proactive",
-           size = 9, x = 0.85, y = -0.065) +
-  annotate(geom = "text", label = "health"   ,
-           size = 9, x = 0.7, y = 1.065) +
-  annotate(geom = "text", label = "community", 
-           size = 9, x = 0.93, y = 1.065) +
-  annotate(geom = "text", label = "quality of life",
-           size = 9, x = 1.075, y = 0.58, angle = -90)
+  annotate(geom = "text", label = "crime"          , colour = "dodgerblue4", 
+           size = 9, x = 0.22, y = 1.065) +
+  annotate(geom = "text", label = "traffic"        , colour = "dodgerblue4", 
+           size = 9, x = 0.67, y = 0.36) +
+  annotate(geom = "text", label = "quality of life", colour = "dodgerblue4", 
+           size = 9, x = 0.75, y = -0.065) +
+  annotate(geom = "text", label = "proactive"      , colour = "dodgerblue4", 
+           size = 9, x = 0.62, y = 1.065) +
+  annotate(geom = "text", label = "community"      ,  colour = "dodgerblue4", 
+           size = 9, x = 0.92, y = 1.065) +
+  annotate(geom = "text", label = "health"         , colour = "dodgerblue4", 
+           size = 9, x = 1.073, y = 0.58, angle = -90)
 
 # Save portrait version.
 ggsave(filename = "visuals/fig1_time_port.png", height = 48, width = 40, unit = "cm", dpi = 300)
-
-# Landscape version annotations.
-# time_ann_gg <- time_gg +
-#   theme(plot.margin = unit(c(3,3,3,3), "cm")) +
-#   coord_cartesian(xlim = c(0,1), ylim = c(0,1), clip = "off") +
-#   annotate(geom = "text", label = "crime",
-#            size = 16, x = 0.27, y = -0.075) +
-#   annotate(geom = "text", label = "traffic",
-#            size = 16, x = 0.27, y = 1.08) +
-#   annotate(geom = "text", label = "proactive",
-#            size = 16, x = 0.85, y = -0.075) +
-#   annotate(geom = "text", label = "health",
-#            size = 16, x = 0.7, y = 1.08) +
-#   annotate(geom = "text", label = "community",
-#            size = 16, x = 0.93, y = 1.08) +
-#   annotate(geom = "text", label = "quality of life",
-#            size = 16, x = 1.07, y = 0.57, angle = -90)
-
-# Save.
-# ggsave(filename = "visuals/fig1_time_land.png", height = 42, width = 62, unit = "cm", dpi = 300)
 
 # For further descriptive statsitics, we join the new categories back with the raw data.
 detroit19_deploy_df <- detroit19_deploy_df %>% 
@@ -426,7 +405,7 @@ dh_agg_hm_list <- lapply(dh_agg_list, function(x){
   ggplot(data = x) +
     geom_tile(mapping = aes(x = time_lr, y = week_day, fill = mean_count)) +
     scale_x_discrete(labels = 1:24) +
-    scale_fill_continuous(guide = "colourbar", low = "snow", high = "dodgerblue3") +
+    scale_fill_continuous(guide = "colourbar", low = "snow", high = "dodgerblue4") +
     guides(fill = guide_colourbar(barwidth = 0.5, barheight = 4)) +
     labs(fill = NULL, x = NULL, y = NULL) +
     theme_minimal() +
@@ -457,11 +436,10 @@ sum(is.na(detroit19_deploy_df$longitude)) # 0
 duplicate_coords_df <- detroit19_deploy_df %>% 
   distinct(latitude, longitude)
 
-length(unique(detroit19_deploy_df$longitude)) # 18650
-length(unique(detroit19_deploy_df$latitude))  # 18650
-
-length(unique(duplicate_coords_df$longitude)) # 18650
-length(unique(duplicate_coords_df$latitude))  # 18650
+length(unique(detroit19_deploy_df$longitude)) # 16374
+length(unique(detroit19_deploy_df$latitude))  # 16374
+length(unique(duplicate_coords_df$longitude)) # 16374
+length(unique(duplicate_coords_df$latitude))  # 16374
 
 # Check sample of incidents.
 set.seed(1612)
@@ -482,15 +460,15 @@ detroit_sample_sf %>%
   as_tibble() %>% 
   write_csv(file = "data/detroit_sample.csv")
 
-# This makes it clear that (most) incidents for which the location is not known are geocoded
+# This makes it clear that many incidents for which the location is not known are geocoded
 # to a specific arbitrary location (-83.111560213, 42.3003668800001).
 
-# What percentage of incidents have a *known* location? Defined as known zipcode. The coordinate above
-# does not have a zipcode allocated.
+# What percentage of incidents have a *known* location? Defined as known zipcode. This leaves only
+# those with complete coordinates and excluded the -83.111560213, 42.3003668800001 location.
 detroit19_deploy_known_df <- detroit19_deploy_df %>% 
   drop_na(zip_code)
 
-nrow(detroit19_deploy_known_df)/nrow(detroit19_deploy_df) # 95% are 'known'. Proceed with these.
+nrow(detroit19_deploy_known_df)/nrow(detroit19_deploy_df) # 98% are 'known'. Proceed with these.
 
 # Load in nhood boundaries of Detroit. Shapefile downloaded from https://data.detroitmi.gov/datasets/current-city-of-detroit-neighborhoods/explore?location=42.352721%2C-83.099208%2C11.13.
 detroit_sf <- st_read("data/Current_City_of_Detroit_Neighborhoods.shp")
@@ -548,7 +526,7 @@ grid_maps_list <- lapply(detroit19_grid_list, function(x){
   ggplot() +
     geom_sf(data = x, mapping = aes(fill = call_count), colour = "transparent") +
     geom_sf(data = detroit_uni_sf, fill = "transparent") +
-    scale_fill_continuous(guide = "colourbar", low = "snow", high = "dodgerblue3", n.breaks = 5) +
+    scale_fill_continuous(guide = "colourbar", low = "snow", high = "dodgerblue4", n.breaks = 5) +
     labs(fill = NULL) +
     guides(fill = guide_colourbar(barwidth = 0.5, barheight = 8)) +
     theme_void() +
