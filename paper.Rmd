@@ -11,7 +11,7 @@ abstract: In the spirit of a recent contribution by Ratcliffe (2021) published i
   _Crime Science_ this short paper describes the scale and composition of public demand
   for police services in Detroit, United States, during 2019. Findings broadly confirm
   those by Ratcliffe, namely, that a considerable proportion of police time is spent
-  resolving a diverse array of (non-criminal) calls for service, including public
+  resolving a diverse array of calls for service, including public
   health incidents. The temporal and spatial patterning of different types of public
   demand for police services are often distinct. The data and code to replicate analyses
   are made openly available.
@@ -34,11 +34,22 @@ A study from @ratcliffe2021policing in _Crime Science_ sought to describe the co
 
 ## Measuring demand
 
-Using computer aided dispatch (CAD) data from the Philadelphia Police Department (PPD) the @ratcliffe2021policing study provided a breakdown of calls for service in 2019. CAD codes, used the describe calls, of which eighty unique descriptions originated from the public and required officer dispatch, were classified into six broad categories: community issues, crime, medical/public health, proactive policing, quality of life, and traffic duties. Recognising that frequency counts of calls for service do not necessarily reflect the amount of consumed police resource, raw counts were adjusted by the time committed by officers to deal with each incident type. Findings indicated that around 55% of officer shift activity time was spent on crime incidents, with the remainder of time allocated to incidents involving medical/public health (9%), the community (7%), proactive policing (5%), quality of life (14%) and traffic duties (11%). Focusing on medical/public health incidents, findings also indicated that calls concentrated in particular areas of the city and during particular hours of the day.
+Using computer aided dispatch (CAD) data from the Philadelphia Police Department (PPD) the @ratcliffe2021policing study provided a breakdown of calls for police service during 2019. CAD codes, used to describe calls, of which eighty unique descriptions originated from the public and required officer dispatch, were classified into six broad categories: community issues, crime, medical/public health, proactive policing, quality of life, and traffic duties. Recognising that frequency counts of calls for service do not necessarily reflect the amount of consumed police resource, raw counts were adjusted by the time committed by officers to deal with each incident type. Findings indicated that around 55% of officer shift activity time was spent on calls relating to crime, with the remainder of time allocated to incidents involving medical/public health (9%), the community (7%), proactive policing (5%), quality of life (14%) and traffic duties (11%). Focusing on medical/public health incidents, findings also indicated that calls concentrated in particular areas of the city and during particular hours of the day.
 
-The data used for this study covers the city of Detroit in Michigan, United States. The City of Detroit authority publish calls for service data through their open data portal.^[Accessible via https://data.detroitmi.gov/]. The raw data includes both citizen-initiated 911 calls to request police services and officer-initiated calls spanning back to September 2016. In alignment with @ratcliffe2021policing, the data used here is subset for the year 2019 and excludes those calls initiated by an officer. For each incident, the response time and time on the scene are reported. In sum, these comprise the total time officers spent on the incident. Incidents which had a total allocated time of zero minutes (or negative values) were excluded, leaving 301,490 calls for service throughout the year. Each incident has a _calldescription_ variable which describes the nature of the call. There were 207 unique call description categories which in the interests of parsimony and ease of interpretation were recoded into 101 categories. ^[We refer readers to the corresponding GitHub repository for further details on how call descriptions were combined (xxxxxxxxxxxxxxxxxxxxxxxxxx). Readers unfamiliar with R code can review the reference table entitled 'categorisation summary'. Each call description was then categorised into the six demand type classifications used in @ratcliffe2021policing]. For each of the six demand types, an 'other' classification was generated for those incident types were consumed less than 0.2% of police time during the year. This left a total of 48 categories for the reported breakdown.
+The data used for this study covers the city of Detroit in Michigan, United States. The City of Detroit authority publish calls for service data through their open data portal.^[Accessible via https://data.detroitmi.gov/]. The raw data includes both citizen-initiated 911 calls to request police services and officer-initiated calls spanning back to September 2016. In alignment with @ratcliffe2021policing, the data used here is subset for the year 2019 and excludes those calls initiated by an officer. For each incident, the response time and time on the scene are reported. In sum, these comprise the total time officers spend on the incident. Incidents which had a total allocated time of zero minutes (or negative values) were excluded. 
 
-Each incident also has corresponding latitude and longitude coordinates and a call timestamp. Due to irregularities in geocoding, likely due unknown locations for some calls, 2% of incidents were excluded from the spatial descriptive analyses. 
+Each incident has a _calldescription_ variable which describes the nature of the call. Call descriptions involving administrative duties (e.g., "start of shift information"), completely unknown problems, and non-deployment (e.g., "employee call in / time off") were removed. This left 207 unique call description categories. In the interests of parsimony and ease of interpretation these categories were recoded into 101 broader call descriptions. ^[We refer readers to the corresponding GitHub repository for further details on how call descriptions were combined (xxxxxxxxxxxxxxxxxxxxxxxxxx). Readers unfamiliar with R code can review the reference table entitled 'categorisation summary'.] Each call description was then categorised into the six demand type classifications used in @ratcliffe2021policing. 2.8% of incidents were deemed classifiable. For each of the six demand types, an 'other' classification was generated for those incident types which consumed less than 0.2% of police time during the year. This left a total of 48 categories for the reported breakdowns, capturing 267 thousand individual public calls for service during 2019. 
+
+In the spirit of @ratcliffe2021policing, the frequency counts and proportional breakdowns of demand type classifications are reported in Table 1. This tells a comparable story to Philadelphia: a considerable proportion of citizen calls for service, and in turn, time spent by officers, is committed to a diverse array of issues. In Detroit, just 46% of police time was spent dealing with calls for service relating to crime (55% in Philadelphia). The remainder of time was spent dealing with community issues (6%), public and mental health (7%), proactive activity (7%), quality of life incidents (19%) and traffic duties (13%). The proportional breakdown of time consumed for each incident, grouped by demand type classification, are visualised in Figure 1. Here, it is clear that a small number incident types tend to dominate each demand classification. While incident descriptions are not always comparable, this visualisation confirms the diversity and complexity of public demand for police services reported in @ratcliffe2021policing. 
+
+```{r table1}
+table1_df <- read_csv("results/table1_des_stats.csv")
+
+kable(table1_df, caption = "Breakdown of frequency counts and time committed for each demand type.",
+      booktabs = T, longtable = T, linesep = "", format = "latex") %>%
+    kable_styling(latex_options = c("striped"),
+                  font_size = 10, full_width = F)
+```
 
 \newpage
 ```{r fig1, fig.align = "center", fig.cap = "Proportional breakdown of deployed time spent on each incident category. Graphic inspired by Ratcliffe (2012).", out.width = "\\textwidth"}
@@ -46,14 +57,7 @@ knitr::include_graphics("visuals/fig1_time_port.png")
 ```
 \newpage
 
-```{r table1}
-table1_df <- read_csv("results/table1_des_stats.csv")
-
-kable(table1_df, caption = "Frequency and proportional breakdown (counts and time) for each demand type.",
-      booktabs = T, longtable = T, linesep = "", format = "latex") %>%
-    kable_styling(latex_options = c("striped"),
-                  font_size = 10, full_width = F)
-```
+Each incident also has corresponding latitude and longitude coordinates and a call timestamp. Due to irregularities in geocoding, likely due unknown locations for some calls, 2% of incidents were excluded from the spatial descriptive analyses. 
 
 ## Temporal patterning
 

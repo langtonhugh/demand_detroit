@@ -311,6 +311,10 @@ detroit_19_times_agg_df <- detroit_19_times_df %>%
 # Check missings.
 sum(is.na(detroit_19_times_agg_df)) # 0
 
+# How many incidents in total?
+sum(detroit_19_times_agg_df$freq) # 267737
+
+
 # Descriptive stats. 
 des_stats_df <- detroit_19_times_agg_df %>% 
   # mutate(type = str_to_title(type)) %>% 
