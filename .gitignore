@@ -1,6 +1,7 @@
 # Data
 data/*.csv
 data/*.qgz
+data/Current_City*
 
 # Results
 results/*.dbf
