@@ -355,15 +355,19 @@ time_ann_gg <- time_gg +
   annotate(geom = "text", label = "crime"          , colour = "dodgerblue4", 
            size = 9, x = 0.22, y = 1.065) +
   annotate(geom = "text", label = "traffic"        , colour = "dodgerblue4", 
-           size = 9, x = 0.67, y = 0.36) +
+           size = 9, x = 0.82, y = 0.58, angle = -90) +
   annotate(geom = "text", label = "quality of life", colour = "dodgerblue4", 
            size = 9, x = 0.75, y = -0.065) +
   annotate(geom = "text", label = "proactive"      , colour = "dodgerblue4", 
            size = 9, x = 0.62, y = 1.065) +
   annotate(geom = "text", label = "community"      , colour = "dodgerblue4", 
            size = 9, x = 0.92, y = 1.065) +
-  annotate(geom = "text", label = "health"         , colour = "dodgerblue4", 
-           size = 9, x = 1.073, y = 0.58, angle = -90)
+  annotate(geom = "text", label = "health"         , colour = "dodgerblue4",
+           size = 9, x = 1.07, y = 0.58, angle = -90) +
+  annotate(geom = "text", label = "PPO = Personal Protection Order",
+           size = 4, x = -0.045, y = -0.03, hjust = 0) +
+  annotate(geom = "text", label = "UDAA = Unlawfully Driving Away of an Automobile",
+           size = 4, x = -0.045, y = -0.04, hjust = 0)
 
 # Save portrait version.
 ggsave(filename = "visuals/fig1_time_port.png", height = 48, width = 40, unit = "cm", dpi = 300)
@@ -418,7 +422,8 @@ dh_agg_hm_list <- lapply(dh_agg_list, function(x){
     theme_minimal() +
     theme(legend.text = element_text(size = 5),
           axis.text   = element_text(size = 6), 
-          legend.text.align = 0.5)
+          legend.text.align = 0.5,
+          legend.text = element_text(size = 11))
 })
 
 # Arrange and annotate graphic.
@@ -535,18 +540,19 @@ grid_maps_list <- lapply(detroit19_grid_list, function(x){
     geom_sf(data = detroit_uni_sf, fill = "transparent") +
     scale_fill_continuous(guide = "colourbar", low = "snow", high = "dodgerblue3", n.breaks = 5) +
     labs(fill = NULL) +
-    guides(fill = guide_colourbar(barwidth = 0.5, barheight = 8)) +
+    guides(fill = guide_colourbar(barwidth = 0.5, barheight = 12)) +
     theme_void() +
-    theme(legend.text = element_text(size = 8))
+    theme(legend.text = element_text(size = 11))
 })
 
 # Arrange maps.
 maps_gg <-  plot_grid(plotlist = grid_maps_list,
                       ncol = 2,
                       labels = unique(dh_agg_df$type),
-                      label_size = 12, label_fontface = "plain",
+                      label_size = 16, label_fontface = "plain",
                       hjust = 0.5, label_x = 0.5,
                       scale = 1)
 
 # Save.
-ggsave(filename = "visuals/fig3_maps.png", height = 30, width = 30, unit = "cm", dpi = 300)
+ggsave(filename = "visuals/fig3_maps.png", height = 48, width = 40, unit = "cm", dpi = 300)
+  
