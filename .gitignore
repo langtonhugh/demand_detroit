@@ -1,10 +1,12 @@
 # Data
 data/*.csv
+data/*.qgz
 
 # Results
 results/*.dbf
 results/*.shp
 results/*.shx
+results/*.prj
 
 
 # History files
