@@ -1,6 +1,12 @@
 # Data
 data/*.csv
 
+# Results
+results/*.dbf
+results/*.shp
+results/*.shx
+
+
 # History files
 .Rhistory
 .Rapp.history

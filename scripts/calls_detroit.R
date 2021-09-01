@@ -1,4 +1,5 @@
 # Load libraries.
+library(ggspatial)
 library(nngeo)
 library(cowplot)
 library(readr)
@@ -422,8 +423,7 @@ dh_agg_hm_list <- lapply(dh_agg_list, function(x){
     theme_minimal() +
     theme(legend.text = element_text(size = 5),
           axis.text   = element_text(size = 6), 
-          legend.text.align = 0.5,
-          legend.text = element_text(size = 11))
+          legend.text.align = 0.5)
 })
 
 # Arrange and annotate graphic.
@@ -519,7 +519,7 @@ detroit19_deploy_clip_list <- detroit19_deploy_clip_sf %>%
   filter(type != "unclassified") %>% 
   group_split(type)
 
-# Create list of the duplicate grid sf objects to match. Not ideal!
+# Create list of the duplicate grid sf objects to match. NOT IDEAL! Forgive me.
 grids_list <- c(detroit_grid_sf, detroit_grid_sf, detroit_grid_sf,
                 detroit_grid_sf, detroit_grid_sf, detroit_grid_sf)
 
@@ -533,17 +533,44 @@ p2p_fun <- function(x, y){
 # Run p2p through lists of incidents and duplicate grids.
 detroit19_grid_list <- map2(grids_list, detroit19_deploy_clip_list, p2p_fun)
 
+# Check counts for each demand type. Note these counts as slightly lower than
+# the Table 1 counts because we lost 2% due to incomplete coordinates.
+# This confirms that the list remains in alphabetical order.
+lapply(detroit19_grid_list, function(x){sum(x$call_count)})
+
+# Save specific maps for exploration in QGIS (optional).
+names(detroit19_grid_list) <- unique(dh_agg_df$type)
+
+for (i in 1:length(detroit19_grid_list)) {
+  st_write(obj = detroit19_grid_list[[i]],
+           dsn = paste("results/", names(detroit19_grid_list[i]), "_map.shp", sep = ""))
+}
+
 # Generate maps of incident counts by type.
 grid_maps_list <- lapply(detroit19_grid_list, function(x){
   ggplot() +
     geom_sf(data = x, mapping = aes(fill = call_count), colour = "transparent") +
     geom_sf(data = detroit_uni_sf, fill = "transparent") +
-    scale_fill_continuous(guide = "colourbar", low = "snow", high = "dodgerblue3", n.breaks = 5) +
+    scale_fill_continuous(guide = "colourbar", low = "snow", high = "dodgerblue3", n.breaks = 2,
+                          limits = c(0,max(x$call_count))) +
     labs(fill = NULL) +
-    guides(fill = guide_colourbar(barwidth = 0.5, barheight = 12)) +
+    guides(fill = guide_colourbar(barwidth = 9, barheight = 0.6, draw.ulim = FALSE,
+                                  ticks.colour = "black", ticks.linewidth = 2)) +
     theme_void() +
-    theme(legend.text = element_text(size = 11))
+    theme(legend.text = element_text(size = 11),
+          legend.position = c(0.7,0.2),
+          legend.direction = "horizontal",
+          legend.box = "horizontal")
 })
+
+# Adjust quality of life limits due to rounded max, and annotate. Note
+# that this places an existing element and replaces previous fill layer.
+grid_maps_list[[5]] <- grid_maps_list[[5]] +
+  scale_fill_continuous(guide = "colourbar", low = "snow", high = "dodgerblue3", n.breaks = 2,
+                        limits = c(0,20+max(detroit19_grid_list[[5]]$call_count))) +
+  annotation_scale(pad_x = unit(2, "cm"), pad_y = unit(4, "cm"), line_width = 1) +
+  annotation_north_arrow(pad_x = unit(3.8, "cm"), pad_y = unit(1, "cm"),
+                         style = north_arrow_fancy_orienteering)
 
 # Arrange maps.
 maps_gg <-  plot_grid(plotlist = grid_maps_list,
@@ -551,8 +578,7 @@ maps_gg <-  plot_grid(plotlist = grid_maps_list,
                       labels = unique(dh_agg_df$type),
                       label_size = 16, label_fontface = "plain",
                       hjust = 0.5, label_x = 0.5,
-                      scale = 1)
-
+                      scale = 1.05)
 # Save.
 ggsave(filename = "visuals/fig3_maps.png", height = 48, width = 40, unit = "cm", dpi = 300)
   

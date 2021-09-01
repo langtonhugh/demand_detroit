@@ -67,7 +67,18 @@ The mean incident counts by day of the week and by hour, for each demand classif
 
 ## Spatial patterning
 
-Individual incident location coordinates were aggregated to synthetic grid cells laid over the city to generate heatmaps of counts throughout the year. ^[Grid cells were defined as 1000$^2$, a size deemed appropriate based on a balance between capturing localised variation and interpretable visualisations. 2% of incidents were excluded from the spatial visualisations due to incomplete geographic information.]These are visualised for each demand classification in Figure 3.
+Individual incident location coordinates were aggregated to synthetic grid cells laid over the city to generate heatmaps of counts throughout the year. ^[Grid cells were defined as 1000 ft$^2$ (305m$^2$) -- a size deemed appropriate based on a balance between capturing localised variation and interpretable visualisations. 2% of incidents were excluded from the spatial visualisations due to incomplete geographic information.] These are visualised for each demand classification in Figure 3. 
+
+- Community: Wayne State University buildings.
+- Crime: Henry Ford Hospital, including the emergency department.
+         The hotspot in the far east is also a hosptial, as is the north west one.
+- Proactive: Wayne State University buildings, Midtown neighbourhood, just outside
+  downtown.
+- Quality of life: university disticts, downtown detroit and financial district.
+- Health: downtown, universities, schools and detroit rescue mission ministries
+
+
+
 
 \newpage
 ```{r fig2, fig.align = "center", fig.cap = "Mean incident counts by day and week, for each demand type.", out.width = "\\textwidth"}
