@@ -568,8 +568,8 @@ grid_maps_list <- lapply(detroit19_grid_list, function(x){
 grid_maps_list[[5]] <- grid_maps_list[[5]] +
   scale_fill_continuous(guide = "colourbar", low = "snow", high = "dodgerblue3", n.breaks = 2,
                         limits = c(0,20+max(detroit19_grid_list[[5]]$call_count))) +
-  annotation_scale(pad_x = unit(2, "cm"), pad_y = unit(4, "cm"), line_width = 1) +
-  annotation_north_arrow(pad_x = unit(3.8, "cm"), pad_y = unit(1, "cm"),
+  annotation_scale(pad_x = unit(1, "cm"), pad_y = unit(0.1, "cm"), line_width = 1, text_cex = 1, style = "ticks") +
+  annotation_north_arrow(pad_x = unit(2.8, "cm"), pad_y = unit(1.5, "cm"),
                          style = north_arrow_fancy_orienteering)
 
 # Arrange maps.
@@ -581,4 +581,3 @@ maps_gg <-  plot_grid(plotlist = grid_maps_list,
                       scale = 1.05)
 # Save.
 ggsave(filename = "visuals/fig3_maps.png", height = 48, width = 40, unit = "cm", dpi = 300)
-  
