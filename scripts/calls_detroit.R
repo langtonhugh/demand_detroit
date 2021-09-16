@@ -78,6 +78,7 @@ calldesc_df <- tibble(calldescription = unique(detroit19_deploy_df$calldescripti
   arrange(calldescription)
 
 # Recode raw calldescription into broader categories and rename to short characters as appropriate.
+# We also remove 'warrant' and 'transport prisoner' are considered not officer initiated.
 detroit19_deploy_df <- detroit19_deploy_df %>% 
   mutate(calldescription2 = if_else(str_detect(calldescription, "DV")                                      ,"DOMESTIC INCIDENT"          , calldescription),
          calldescription2 = if_else(str_detect(calldescription, "MENTAL")                                  ,"MENTAL HEALTH"              , calldescription2),
@@ -143,10 +144,11 @@ detroit19_deploy_df <- detroit19_deploy_df %>%
          calldescription2 = if_else(calldescription %in% c("DPD DEMS DFD N TRO","ASSIST PERSONNEL")              ,"ASSIST EMERGENCY PERSONNEL"            , calldescription2),
          calldescription2 = if_else(calldescription %in% c("CITIZEN RADIO PATROL IN TROUBL","ASSIST CITIZEN","SENIOR CITIZEN ASSIST")    ,"ASSIST CITIZEN", calldescription2),
          calldescription2 = if_else(calldescription %in% c("INVESTIGATE PERSON", "INVESTIGATE YOUTH(S)")    ,"INVESTIGATE PERSON(S)"     , calldescription2),
-         calldescription2 = if_else(calldescription %in% c("EMERGENCY STANDBY", "BE ON THE LOOK OUT")       ,"STAND-BY"                  , calldescription2))
+         calldescription2 = if_else(calldescription %in% c("EMERGENCY STANDBY", "BE ON THE LOOK OUT")       ,"STAND-BY"                  , calldescription2)) %>% 
+  filter(calldescription2 != "WARRANT" & calldescription2 != "TRANSPORT PRISONER") 
 
 # How many unique categories after recoding?
-length(unique(detroit19_deploy_df$calldescription2)) # 101
+length(unique(detroit19_deploy_df$calldescription2)) # 99
 
 # Create new df to consult recoding.
 calldesc2_df <- detroit19_deploy_df %>% 
@@ -188,9 +190,9 @@ proactive_vec <- c("BACKGROUND CHECK",
                    "ESCORT",
                    "INVESTIGATE AUTO",
                    "INVESTIGATE PERSON(S)",
-                   "SPECIAL ATTENTION",
-                   "TRANSPORT PRISONER",
-                   "WARRANT")
+                   "SPECIAL ATTENTION")
+                   # "TRANSPORT PRISONER",
+                   # "WARRANT")
 
 qol_vec       <- c("DEAD PERSON OBSERVED",
                    "DISTURBANCE",
@@ -286,6 +288,7 @@ unclas_vec    <- c("ADMIT OR E/E",
                    "WRKABLE ARRST/OBV OR EXP DEATH")
 
 # Add broad category.
+# We now also remove prisoner and warrant calls, as these are deemed to officer-initiated.
 detroit_19_times_df <- detroit_19_times_df %>% 
   mutate(type = if_else(calldescription2 %in% comm_vec     , "community"      , NULL),
          type = if_else(calldescription2 %in% crime_vec    , "crime"          , type),
@@ -313,12 +316,10 @@ detroit_19_times_agg_df <- detroit_19_times_df %>%
 sum(is.na(detroit_19_times_agg_df)) # 0
 
 # How many incidents in total?
-sum(detroit_19_times_agg_df$freq) # 267737
-
+sum(detroit_19_times_agg_df$freq) # 265251
 
 # Descriptive stats. 
 des_stats_df <- detroit_19_times_agg_df %>% 
-  # mutate(type = str_to_title(type)) %>% 
   group_by(type) %>% 
   summarise(`Count`      = sum(freq),
             `Count (%)`  = round(sum(prop_count), 2),
@@ -339,6 +340,8 @@ write_csv(x = detroit_19_times_agg_df, file = "results/prop_breakdown.csv")
 detroit_19_times_agg_df <- detroit_19_times_agg_df %>% 
   mutate(calldescription2_labs = str_replace_all(string = calldescription2, pattern = " ", replacement = "\n"))
 
+length(unique(detroit_19_times_agg_df$calldescription2)) # 46
+
 # Demand time graphic.
 time_gg <- detroit_19_times_agg_df %>%
   filter(type != "unclassified") %>%
@@ -355,16 +358,16 @@ time_ann_gg <- time_gg +
   coord_cartesian(xlim = c(0,1), ylim = c(0,1), clip = "off") +
   annotate(geom = "text", label = "crime"          , colour = "dodgerblue4", 
            size = 9, x = 0.22, y = 1.065) +
-  annotate(geom = "text", label = "traffic"        , colour = "dodgerblue4", 
-           size = 9, x = 0.82, y = 0.58, angle = -90) +
   annotate(geom = "text", label = "quality of life", colour = "dodgerblue4", 
            size = 9, x = 0.75, y = -0.065) +
+  annotate(geom = "text", label = "health"      , colour = "dodgerblue4", 
+           size = 9, x = 0.59, y = 1.065) +
   annotate(geom = "text", label = "proactive"      , colour = "dodgerblue4", 
-           size = 9, x = 0.62, y = 1.065) +
-  annotate(geom = "text", label = "community"      , colour = "dodgerblue4", 
-           size = 9, x = 0.92, y = 1.065) +
-  annotate(geom = "text", label = "health"         , colour = "dodgerblue4",
-           size = 9, x = 1.07, y = 0.58, angle = -90) +
+           size = 9, x = 0.88, y = 1.065) +
+  annotate(geom = "text", label = "traffic"         , colour = "dodgerblue4",
+           size = 9, x = 1.07, y = 0.53, angle = -90) +
+  annotate(geom = "text", label = "community"         , colour = "dodgerblue4",
+           size = 9, x = 1.07, y = 0.77, angle = -90) +
   annotate(geom = "text", label = "PPO = Personal Protection Order",
            size = 4, x = -0.045, y = -0.03, hjust = 0) +
   annotate(geom = "text", label = "UDAA = Unlawfully Driving Away of an Automobile",
@@ -373,14 +376,14 @@ time_ann_gg <- time_gg +
 # Save portrait version.
 ggsave(filename = "visuals/fig1_time_port.png", height = 48, width = 40, unit = "cm", dpi = 300)
 
-# For further descriptive statsitics, we join the new categories back with the raw data.
+# For further descriptive statistics, we join the new categories back with the raw data.
 detroit19_deploy_df <- detroit19_deploy_df %>% 
   left_join(detroit_19_times_df)
 
 # Check missings after join.
 sum(is.na(detroit19_deploy_df$prop_counts))
 
-# Recreate other category by type (not used yet).
+# Create other category again if needed.
 detroit19_deploy_df <- detroit19_deploy_df %>%
   mutate(calldescription2 = if_else(prop_time < 0.2, true  = "OTHER", false = calldescription2))
 
@@ -398,6 +401,9 @@ detroit19_deploy_df <- detroit19_deploy_df %>%
 # Create small example of detroit19_deploy_df for manual viewing.
 mini_df <- detroit19_deploy_df %>% 
   slice(1:100)
+
+# Check categories again.
+length(unique(detroit19_deploy_df$calldescription2)) # 46
 
 # Aggregate by date and hour.
 dh_agg_df <- detroit19_deploy_df %>% 
@@ -417,7 +423,8 @@ dh_agg_hm_list <- lapply(dh_agg_list, function(x){
   ggplot(data = x) +
     geom_tile(mapping = aes(x = time_lr, y = week_day, fill = mean_count)) +
     scale_x_discrete(labels = 1:24) +
-    scale_fill_continuous(guide = "colourbar", low = "snow", high = "dodgerblue3") +
+    scale_fill_continuous(guide = "colourbar", low = "snow", high = "dodgerblue3",
+                          breaks = scales::pretty_breaks(n = 3)) +
     guides(fill = guide_colourbar(barwidth = 0.5, barheight = 4)) +
     labs(fill = NULL, x = NULL, y = NULL) +
     theme_minimal() +
@@ -425,6 +432,13 @@ dh_agg_hm_list <- lapply(dh_agg_list, function(x){
           axis.text   = element_text(size = 6), 
           legend.text.align = 0.5)
 })
+
+# Alter the breaks in proactive heatmap to ensure that we don't get integers. Imperfect but it makes
+# the visuals uniform.
+# dh_agg_hm_list[[4]] <- dh_agg_hm_list[[4]] +
+#   scale_fill_continuous(guide = "colourbar", low = "snow", high = "dodgerblue3",
+#                         breaks = c(2,3),
+#                         limits = c(1.1,3)) 
 
 # Arrange and annotate graphic.
 time_heat_gg <- plot_grid(plotlist = dh_agg_hm_list,
@@ -448,10 +462,10 @@ sum(is.na(detroit19_deploy_df$longitude)) # 0
 duplicate_coords_df <- detroit19_deploy_df %>% 
   distinct(latitude, longitude)
 
-length(unique(detroit19_deploy_df$longitude)) # 16374
-length(unique(detroit19_deploy_df$latitude))  # 16374
-length(unique(duplicate_coords_df$longitude)) # 16374
-length(unique(duplicate_coords_df$latitude))  # 16374
+length(unique(detroit19_deploy_df$longitude)) # 16358
+length(unique(detroit19_deploy_df$latitude))  # 16358
+length(unique(duplicate_coords_df$longitude)) # 16358
+length(unique(duplicate_coords_df$latitude))  # 16358
 
 # Check sample of incidents.
 set.seed(1612)
@@ -471,6 +485,12 @@ ggplot(data = detroit_sample_sf) +
 detroit_sample_sf %>% 
   as_tibble() %>% 
   write_csv(file = "data/detroit_sample.csv")
+
+# Check categories again.
+length(unique(detroit19_deploy_df$calldescription2)) # 46
+
+# Check counts total.
+nrow(detroit19_deploy_df) # 265251
 
 # This makes it clear that many incidents for which the location is not known are geocoded
 # to a specific arbitrary location (-83.111560213, 42.3003668800001).
@@ -502,7 +522,7 @@ diss_df <- detroit_sf %>%
   ungroup()
 
 # Remove holes. Note the legitimate hole for Highland Park + Hamtramck.
-detroit_uni_sf <- st_remove_holes(diss_df, max_area = 0)
+detroit_uni_sf <- st_remove_holes(diss_df, max_area = 0) # 10000 will keep the parks.
 
 # Clip incident points to the Detroit boundary.
 detroit19_deploy_clip_sf <- detroit19_deploy_known_sf %>% 
@@ -513,6 +533,9 @@ detroit_grid_sf <- detroit_uni_sf %>%
   # st_buffer(dist = 1000) %>% # To check if grids miss incidents near boundary.
   st_make_grid(cellsize = 1000) %>% 
   st_as_sf()
+
+# Check counts used in maps. Lower due to incomplete coordinates.
+sum(detroit19_deploy_clip_sf$n) # 253009
 
 # Split incident sf object into list.
 detroit19_deploy_clip_list <- detroit19_deploy_clip_sf %>% 
@@ -564,13 +587,31 @@ grid_maps_list <- lapply(detroit19_grid_list, function(x){
 })
 
 # Adjust quality of life limits due to rounded max, and annotate. Note
-# that this places an existing element and replaces previous fill layer.
+# that this replaces an existing element and replaces previous fill layer.
 grid_maps_list[[5]] <- grid_maps_list[[5]] +
   scale_fill_continuous(guide = "colourbar", low = "snow", high = "dodgerblue3", n.breaks = 2,
                         limits = c(0,20+max(detroit19_grid_list[[5]]$call_count))) +
   annotation_scale(pad_x = unit(1, "cm"), pad_y = unit(0.1, "cm"), line_width = 1, text_cex = 1, style = "ticks") +
   annotation_north_arrow(pad_x = unit(2.8, "cm"), pad_y = unit(1.5, "cm"),
                          style = north_arrow_fancy_orienteering)
+
+# Annotate select maps with key locations.
+grid_maps_list[[2]] <- grid_maps_list[[2]] +
+  annotate(geom = "text"    , x = 13477040, y = 324802, label = "Henry Ford Hospital", size = 4) +
+  annotate(geom = "segment" , x = 13473240, y = 322952, xend = 13470640, yend = 318852, size = 0.7,
+           arrow = arrow(type = "closed", length = unit(0.01, "npc")))
+
+
+grid_maps_list[[4]] <- grid_maps_list[[4]] +
+  annotate(geom = "text"    , x = 13485040, y = 322652, label = "WSU campus, Midtown", size = 4) +
+  annotate(geom = "segment" , x = 13479240, y = 320652, xend = 13476040, yend = 316652, size = 0.7,
+           arrow = arrow(type = "closed", length = unit(0.01, "npc")))
+
+grid_maps_list[[6]] <- grid_maps_list[[6]] +
+  annotate(geom = "text"    , x = 13490040, y = 301652, label = "Downtown", size = 4) +
+  annotate(geom = "segment" , x = 13484240, y = 301752, xend = 13481040, yend = 304752, size = 0.7,
+           arrow = arrow(type = "closed", length = unit(0.01, "npc")))
+
 
 # Arrange maps.
 maps_gg <-  plot_grid(plotlist = grid_maps_list,
