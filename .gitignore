@@ -9,6 +9,9 @@ results/*.shp
 results/*.shx
 results/*.prj
 
+# Docs
+*.pdf
+*.docx
 
 # History files
 .Rhistory
