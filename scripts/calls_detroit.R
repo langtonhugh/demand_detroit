@@ -33,9 +33,6 @@ detroit_df <- detroit_df %>%
   filter(str_detect(call_timestamp, "2019"), # 2019 only.
          officerinitiated == "No")           # exclude officer initiated calls.
 
-# How many?
-
-
 # Date checks.
 detroit_df %>% 
   mutate(year = as.character(str_extract_all(call_timestamp, "^.{4}"))) %>% 

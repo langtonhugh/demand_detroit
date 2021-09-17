@@ -13,6 +13,7 @@ results/*.prj
 *.pdf
 *.docx
 *.rmd
+*.tex
 
 # History files
 .Rhistory
