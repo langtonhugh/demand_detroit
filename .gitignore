@@ -13,7 +13,6 @@ results/*.prj
 *.pdf
 *.docx
 *.rmd
-*.tex
 *.gz
 *.tex
 
