@@ -593,22 +593,21 @@ grid_maps_list[[5]] <- grid_maps_list[[5]] +
                          style = north_arrow_fancy_orienteering)
 
 # Annotate select maps with key locations.
+grid_maps_list[[1]] <- grid_maps_list[[1]] +
+  annotate(geom = "text"    , x = 13467040, y = 322652, label = "WSU campus & Midtown", size = 4) +
+  annotate(geom = "curve" , x = 13467040, y = 320672, xend = 13471640, yend = 316142, size = 0.7,
+           arrow = arrow(length = unit(0.01, "npc")), curvature = 0.3)
+
+
 grid_maps_list[[2]] <- grid_maps_list[[2]] +
   annotate(geom = "text"    , x = 13477040, y = 324802, label = "Henry Ford Hospital", size = 4) +
-  annotate(geom = "segment" , x = 13473240, y = 322952, xend = 13470640, yend = 318852, size = 0.7,
-           arrow = arrow(type = "closed", length = unit(0.01, "npc")))
-
-
-grid_maps_list[[4]] <- grid_maps_list[[4]] +
-  annotate(geom = "text"    , x = 13485040, y = 322652, label = "WSU campus, Midtown", size = 4) +
-  annotate(geom = "segment" , x = 13479240, y = 320652, xend = 13476040, yend = 316652, size = 0.7,
-           arrow = arrow(type = "closed", length = unit(0.01, "npc")))
+  annotate(geom = "curve" , x = 13473240, y = 322952, xend = 13470640, yend = 318852, size = 0.7,
+           arrow = arrow(length = unit(0.01, "npc")), curvature = -0.3)
 
 grid_maps_list[[6]] <- grid_maps_list[[6]] +
   annotate(geom = "text"    , x = 13490040, y = 301652, label = "Downtown", size = 4) +
-  annotate(geom = "segment" , x = 13484240, y = 301752, xend = 13481040, yend = 304752, size = 0.7,
-           arrow = arrow(type = "closed", length = unit(0.01, "npc")))
-
+  annotate(geom = "curve" , x = 13484240, y = 301752, xend = 13481040, yend = 304752, size = 0.7,
+           arrow = arrow(length = unit(0.01, "npc")), curvature = -0.3)
 
 # Arrange maps.
 maps_gg <-  plot_grid(plotlist = grid_maps_list,
