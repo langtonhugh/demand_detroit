@@ -1,1 +1,1 @@
-Project describing the spatial and temporal patterning of police demand in Detroit during 2019.
+Project describing the scale and composition of public calls for service in Detroit, United States.
