@@ -430,13 +430,6 @@ dh_agg_hm_list <- lapply(dh_agg_list, function(x){
           legend.text.align = 0.5)
 })
 
-# Alter the breaks in proactive heatmap to ensure that we don't get integers. Imperfect but it makes
-# the visuals uniform.
-# dh_agg_hm_list[[4]] <- dh_agg_hm_list[[4]] +
-#   scale_fill_continuous(guide = "colourbar", low = "snow", high = "dodgerblue3",
-#                         breaks = c(2,3),
-#                         limits = c(1.1,3)) 
-
 # Arrange and annotate graphic.
 time_heat_gg <- plot_grid(plotlist = dh_agg_hm_list,
                           ncol = 1,
@@ -479,9 +472,9 @@ ggplot(data = detroit_sample_sf) +
 
 # Save csv for exploration in QGIS. I know retrospectively that there is a spurious hotspot,
 # which is ~wasteland, likely due to unknown locations being geocoded to a specific street.
-detroit_sample_sf %>% 
-  as_tibble() %>% 
-  write_csv(file = "data/detroit_sample.csv")
+# detroit_sample_sf %>% 
+#   as_tibble() %>% 
+#   write_csv(file = "data/detroit_sample.csv")
 
 # Check categories again.
 length(unique(detroit19_deploy_df$calldescription2)) # 46
@@ -493,7 +486,7 @@ nrow(detroit19_deploy_df) # 265251
 # to a specific arbitrary location (-83.111560213, 42.3003668800001).
 
 # What percentage of incidents have a *known* location? Defined as known zipcode. This leaves only
-# those with complete coordinates and excluded the -83.111560213, 42.3003668800001 location.
+# those with complete coordinates and excluded 'unknown' location.
 detroit19_deploy_known_df <- detroit19_deploy_df %>% 
   drop_na(zip_code)
 
@@ -539,7 +532,7 @@ detroit19_deploy_clip_list <- detroit19_deploy_clip_sf %>%
   filter(type != "unclassified") %>% 
   group_split(type)
 
-# Create list of the duplicate grid sf objects to match. NOT IDEAL! Forgive me.
+# Create list of the duplicate grid sf objects to match. Not an ideal approach but it works.
 grids_list <- c(detroit_grid_sf, detroit_grid_sf, detroit_grid_sf,
                 detroit_grid_sf, detroit_grid_sf, detroit_grid_sf)
 
