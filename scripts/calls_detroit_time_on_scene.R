@@ -542,7 +542,6 @@ grids_list <- list(detroit_grid_sf, detroit_grid_sf, detroit_grid_sf,
 # Create point (incidents) to polygon (grids) function.
 p2p_fun <- function(x, y){
   x %>% 
-    # st_as_sf() %>% 
     st_join(y) %>% 
     mutate(deployed_time = sum(time_on_scene)) %>% 
     group_by(grid_id) %>% 
@@ -568,18 +567,83 @@ grid_maps_list <- lapply(detroit19_grid_list, function(x){
   ggplot() +
     geom_sf(data = x, mapping = aes(fill = resolve_time_hours), colour = "transparent") +
     geom_sf(data = detroit_uni_sf, fill = "transparent") +
-    scale_fill_continuous(guide = "colourbar", low = "snow", high = "dodgerblue3",
-                          n.breaks = 3, limits = c(0, 1.2*max(x$resolve_time_hours))) +
+    scale_fill_continuous(guide = "colourbar", low = "snow", high = "dodgerblue3") +
     labs(fill = NULL) +
     guides(fill = guide_colourbar(barwidth = 9, barheight = 0.6, draw.ulim = FALSE,
                                   ticks.colour = "black", ticks.linewidth = 2)) +
     theme_void() +
     theme(legend.text = element_text(size = 11),
-          legend.position = c(0.7,0.2),
+          legend.position = c(0.7,0.24),
           legend.direction = "horizontal",
           legend.box = "horizontal")
 })
 
+
+# Distribution across grids. Heavily skewed.
+# histos_agg_list <- lapply(detroit19_grid_list, function(x){
+#   ggplot(data = x) +
+#     geom_histogram(mapping = aes(x = resolve_time_hours), bins = 60) +
+#     theme_minimal() +
+#     labs(x = NULL)
+# }  )
+
+# # Create list of the raw incidents for each type.
+detroit19_deploy_clip_sf <- detroit19_deploy_clip_sf %>%
+  filter(type != "unclassified") %>%
+  mutate(tos_hours = time_on_scene/60)
+
+# Group into list.
+detroit19_deploy_clip_list <- detroit19_deploy_clip_sf %>%
+  group_split(type)
+
+# # Identify max.
+# max_vec <- max(detroit19_deploy_clip_sf$tos_hours) 
+
+# Distributions of time on scene, raw incidents, by type.
+# histos_inc_list <- lapply(detroit19_deploy_clip_list, function(x) {
+#   ggplot(data = x) +
+#     geom_histogram(mapping = aes(x = tos_hours), bins = 60) +
+#     scale_x_continuous(limits = c(0,max_vec)) +
+#     # geom_vline(xintercept = mean(x$time_on_scene), colour = "red", linetype = "dotted") +
+#     theme_minimal() +
+#     labs(x = NULL)
+# })
+
+# Function to a add histograms to maps.
+# histo_fun <- function(x, y) {
+#   ggdraw() +
+#     draw_plot(x) +
+#     draw_plot(y, width = 0.25, height = 0.17, x = 0.07, y = 0.15)
+# }
+
+# Add to each map.
+# maphisto_list <- map2(grid_maps_list, histos_agg_list, histo_fun)
+
+# Adjust quality of life limits due to rounded max, and annotate. Note
+# that this replaces an existing element and replaces previous fill layer.
+grid_maps_list[[5]] <- grid_maps_list[[5]] +
+  scale_fill_continuous(guide = "colourbar", low = "snow", high = "dodgerblue3", n.breaks = 2) +
+                        # limits = c(0,2+max(detroit19_grid_list[[5]]$tos_hours))) +
+  annotation_scale(pad_x = unit(1, "cm"), pad_y = unit(0.1, "cm"), line_width = 1, text_cex = 1, style = "ticks") +
+  annotation_north_arrow(pad_x = unit(2.8, "cm"), pad_y = unit(1.5, "cm"),
+                         style = north_arrow_fancy_orienteering)
+
+# Annotate select maps with key locations.
+grid_maps_list[[1]] <- grid_maps_list[[1]] +
+  annotate(geom = "text"    , x = 13467040, y = 322652, label = "WSU campus & Midtown", size = 4) +
+  annotate(geom = "curve" , x = 13467040, y = 320672, xend = 13471640, yend = 316142, size = 0.7,
+           arrow = arrow(length = unit(0.01, "npc")), curvature = 0.3)
+
+
+grid_maps_list[[2]] <- grid_maps_list[[2]] +
+  annotate(geom = "text"    , x = 13477040, y = 324802, label = "Henry Ford Hospital", size = 4) +
+  annotate(geom = "curve" , x = 13473240, y = 322952, xend = 13470640, yend = 318852, size = 0.7,
+           arrow = arrow(length = unit(0.01, "npc")), curvature = -0.3)
+
+grid_maps_list[[6]] <- grid_maps_list[[6]] +
+  annotate(geom = "text"    , x = 13490040, y = 301652, label = "Downtown", size = 4) +
+  annotate(geom = "curve" , x = 13484240, y = 301752, xend = 13481040, yend = 304752, size = 0.7,
+           arrow = arrow(length = unit(0.01, "npc")), curvature = -0.3)
 
 # Arrange maps.
 maps_gg <-  plot_grid(plotlist = grid_maps_list,
@@ -590,10 +654,3 @@ maps_gg <-  plot_grid(plotlist = grid_maps_list,
                       scale = 1.05)
 # Save.
 ggsave(filename = "visuals/fig3_tos_maps.png", height = 48, width = 40, unit = "cm", dpi = 300)
-
-# Distributions. Heavily skewed.
-lapply(detroit19_grid_list, function(x){
-  ggplot(data = x) +
-    geom_histogram(mapping = aes(x = resolve_time_hours)) 
-})
-
