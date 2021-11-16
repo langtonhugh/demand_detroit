@@ -47,12 +47,16 @@ detroit_df %>%
 
 # Missings in key variables.
 sum(is.na(detroit_df$calldescription))
-sum(is.na(detroit_df$time_on_scene)) 
+sum(is.na(detroit_df$totaltime)) 
+sum(is.na(detroit_df$time_on_scene)) # some overlap with above
+
+# Unique id.
+length(unique(detroit_df$incident_id)) # 419193. Same as the number of rows.
 
 # Remove missings, zeros and negatives.
 detroit19_sub_df <- detroit_df %>% 
-  drop_na(time_on_scene) %>% 
-  filter(time_on_scene >0)
+  drop_na(totaltime, time_on_scene) %>%  # note the overlap.
+  filter(totaltime >0, time_on_scene >0)
 
 # What is the distribution of total time?
 ggplot(data = detroit19_sub_df) +
@@ -314,7 +318,7 @@ detroit_19_times_agg_df <- detroit_19_times_df %>%
 sum(is.na(detroit_19_times_agg_df)) # 0
 
 # How many incidents in total?
-sum(detroit_19_times_agg_df$freq) # 258798
+sum(detroit_19_times_agg_df$freq) # 258773
 
 
 # Descriptive stats. 
@@ -322,7 +326,7 @@ des_stats_df <- detroit_19_times_agg_df %>%
   group_by(type) %>% 
   summarise(`Count`      = sum(freq),
             `Count (%)`  = round(sum(prop_count), 2),
-            `Time (%)`   = round(sum(prop_time ), 2)) %>%
+            `Time on scene (%)`   = round(sum(prop_time ), 2)) %>%
   rename(`Demand type` = type) %>% 
   ungroup()
 
@@ -402,7 +406,7 @@ mini_df <- detroit19_deploy_df %>%
   slice(1:100)
 
 # Check categories again.
-length(unique(detroit19_deploy_df$calldescription2)) # 46
+length(unique(detroit19_deploy_df$calldescription2)) # 50
 
 # Aggregate by date and hour.
 dh_agg_df <- detroit19_deploy_df %>% 
@@ -482,7 +486,7 @@ ggplot(data = detroit_sample_sf) +
 length(unique(detroit19_deploy_df$calldescription2)) # 50
 
 # Check counts total.
-nrow(detroit19_deploy_df) # 258798
+nrow(detroit19_deploy_df) # 258773
 
 # This makes it clear that many incidents for which the location is not known are geocoded
 # to a specific arbitrary location (-83.111560213, 42.3003668800001).
@@ -528,7 +532,7 @@ detroit_grid_sf <- detroit_uni_sf %>%
   mutate(grid_id = 1:nrow(.))
 
 # Check counts used in maps. Lower due to incomplete coordinates.
-sum(detroit19_deploy_clip_sf$n) # 246992
+sum(detroit19_deploy_clip_sf$n) # 246971
 
 # Split incident sf object into list.
 detroit19_deploy_clip_list <- detroit19_deploy_clip_sf %>% 
@@ -567,7 +571,8 @@ grid_maps_list <- lapply(detroit19_grid_list, function(x){
   ggplot() +
     geom_sf(data = x, mapping = aes(fill = resolve_time_hours), colour = "transparent") +
     geom_sf(data = detroit_uni_sf, fill = "transparent") +
-    scale_fill_continuous(guide = "colourbar", low = "snow", high = "dodgerblue3") +
+    scale_fill_continuous(guide = "colourbar", low = "snow", high = "dodgerblue3",
+                          n.breaks = 2) +
     labs(fill = NULL) +
     guides(fill = guide_colourbar(barwidth = 9, barheight = 0.6, draw.ulim = FALSE,
                                   ticks.colour = "black", ticks.linewidth = 2)) +
@@ -653,4 +658,4 @@ maps_gg <-  plot_grid(plotlist = grid_maps_list,
                       hjust = 0.5, label_x = 0.5,
                       scale = 1.05)
 # Save.
-ggsave(filename = "visuals/fig3_tos_maps.png", height = 48, width = 40, unit = "cm", dpi = 300)
+ggsave(filename = "visuals/fig3_maps_tos.png", height = 48, width = 40, unit = "cm", dpi = 300)
