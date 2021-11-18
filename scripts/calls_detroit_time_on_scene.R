@@ -408,47 +408,49 @@ mini_df <- detroit19_deploy_df %>%
 # Check categories again.
 length(unique(detroit19_deploy_df$calldescription2)) # 50
 
-# Aggregate by date and hour.
-dh_agg_df <- detroit19_deploy_df %>% 
-  group_by(date_lr, time_lr, week_day, type) %>% 
-  summarise(call_count = n()) %>% 
-  ungroup() %>% 
-  group_by(time_lr, week_day, type) %>% 
-  summarise(mean_count = mean(call_count)) %>% 
-  ungroup() %>% 
-  filter(type != "unclassified")
-
-# Split data frame into list by type.
-dh_agg_list <- group_split(dh_agg_df, type)
-
-# Heatmap graphic.
-dh_agg_hm_list <- lapply(dh_agg_list, function(x){
-  ggplot(data = x) +
-    geom_tile(mapping = aes(x = time_lr, y = week_day, fill = mean_count)) +
-    scale_x_discrete(labels = 1:24) +
-    scale_fill_continuous(guide = "colourbar", low = "snow", high = "dodgerblue3",
-                          breaks = scales::pretty_breaks(n = 3)) +
-    guides(fill = guide_colourbar(barwidth = 0.5, barheight = 4)) +
-    labs(fill = NULL, x = NULL, y = NULL) +
-    theme_minimal() +
-    theme(legend.text = element_text(size = 5),
-          axis.text   = element_text(size = 6), 
-          legend.text.align = 0.5)
-})
-
-# Arrange and annotate graphic.
-time_heat_gg <- plot_grid(plotlist = dh_agg_hm_list,
-                          ncol = 1,
-                          labels = unique(dh_agg_df$type),
-                          label_size = 8, label_fontface = "plain",
-                          hjust = 0.5, label_x = 0.5,
-                          scale = 0.9) +
-  theme(plot.margin = unit(c(0,0,0.2,0), "cm")) +
-  annotate(geom = "text", label = "hours of the day",
-           x = 0.5, y = 0, size = 2)
-
-# Save.
-ggsave(filename = "visuals/fig2_time_heat_tos.png", height = 20, width = 20, unit = "cm", dpi = 300)
+# We use the same incidents for counts/time on scene, so there's no need to recreate the heatmap.
+# If run, it will just create an idenical visual.
+# # Aggregate by date and hour.
+# dh_agg_df <- detroit19_deploy_df %>% 
+#   group_by(date_lr, time_lr, week_day, type) %>% 
+#   summarise(call_count = n()) %>% 
+#   ungroup() %>% 
+#   group_by(time_lr, week_day, type) %>% 
+#   summarise(mean_count = mean(call_count)) %>% 
+#   ungroup() %>% 
+#   filter(type != "unclassified")
+# 
+# # Split data frame into list by type.
+# dh_agg_list <- group_split(dh_agg_df, type)
+# 
+# # Heatmap graphic.
+# dh_agg_hm_list <- lapply(dh_agg_list, function(x){
+#   ggplot(data = x) +
+#     geom_tile(mapping = aes(x = time_lr, y = week_day, fill = mean_count)) +
+#     scale_x_discrete(labels = 1:24) +
+#     scale_fill_continuous(guide = "colourbar", low = "snow", high = "dodgerblue3",
+#                           breaks = scales::pretty_breaks(n = 3)) +
+#     guides(fill = guide_colourbar(barwidth = 0.5, barheight = 4)) +
+#     labs(fill = NULL, x = NULL, y = NULL) +
+#     theme_minimal() +
+#     theme(legend.text = element_text(size = 5),
+#           axis.text   = element_text(size = 6), 
+#           legend.text.align = 0.5)
+# })
+# 
+# # Arrange and annotate graphic.
+# time_heat_gg <- plot_grid(plotlist = dh_agg_hm_list,
+#                           ncol = 1,
+#                           labels = unique(dh_agg_df$type),
+#                           label_size = 8, label_fontface = "plain",
+#                           hjust = 0.5, label_x = 0.5,
+#                           scale = 0.9) +
+#   theme(plot.margin = unit(c(0,0,0.2,0), "cm")) +
+#   annotate(geom = "text", label = "hours of the day",
+#            x = 0.5, y = 0, size = 2)
+# 
+# # Save.
+# ggsave(filename = "visuals/fig2_time_heat_tos.png", height = 20, width = 20, unit = "cm", dpi = 300)
 
 # Investigate missings in coordinates.
 sum(is.na(detroit19_deploy_df$latitude))  # 0
@@ -539,6 +541,11 @@ detroit19_deploy_clip_list <- detroit19_deploy_clip_sf %>%
   filter(type != "unclassified") %>% 
   group_split(type)
 
+# Explore distributions. Noting the spike at 30 minutes. Outliers removed just for this.
+ggplot(data = filter(detroit19_deploy_clip_sf, time_on_scene/60 < 3)) +
+  geom_histogram(mapping = aes(x = time_on_scene/60, fill = type, group = type), bins = 100) +
+  facet_wrap(~ type, scales = "free_y")
+
 # Create list of the duplicate grid sf objects to match. Not an ideal approach but it works.
 grids_list <- list(detroit_grid_sf, detroit_grid_sf, detroit_grid_sf,
                    detroit_grid_sf, detroit_grid_sf, detroit_grid_sf)
@@ -559,20 +566,19 @@ p2p_fun <- function(x, y){
 detroit19_grid_list <- map2(grids_list, detroit19_deploy_clip_list, p2p_fun)
 
 # Save specific maps for exploration in QGIS (optional).
-# names(detroit19_grid_list) <- unique(dh_agg_df$type)
-# 
-# for (i in 1:length(detroit19_grid_list)) {
-#   st_write(obj = detroit19_grid_list[[i]],
-#            dsn = paste("results/", names(detroit19_grid_list[i]), "_map.shp", sep = ""))
-# }
+names(detroit19_grid_list) <- unique(dh_agg_df$type)
+
+for (i in 1:length(detroit19_grid_list)) {
+  st_write(obj = detroit19_grid_list[[i]],
+           dsn = paste("results/", names(detroit19_grid_list[i]), "_tos_map.shp", sep = ""))
+}
 
 # Generate maps of incident counts by type.
 grid_maps_list <- lapply(detroit19_grid_list, function(x){
   ggplot() +
     geom_sf(data = x, mapping = aes(fill = resolve_time_hours), colour = "transparent") +
     geom_sf(data = detroit_uni_sf, fill = "transparent") +
-    scale_fill_continuous(guide = "colourbar", low = "snow", high = "dodgerblue3",
-                          n.breaks = 2) +
+    scale_fill_continuous(guide = "colourbar", low = "snow", high = "dodgerblue3", n.breaks = 2) + 
     labs(fill = NULL) +
     guides(fill = guide_colourbar(barwidth = 9, barheight = 0.6, draw.ulim = FALSE,
                                   ticks.colour = "black", ticks.linewidth = 2)) +
@@ -583,7 +589,6 @@ grid_maps_list <- lapply(detroit19_grid_list, function(x){
           legend.box = "horizontal")
 })
 
-
 # Distribution across grids. Heavily skewed.
 # histos_agg_list <- lapply(detroit19_grid_list, function(x){
 #   ggplot(data = x) +
@@ -591,16 +596,16 @@ grid_maps_list <- lapply(detroit19_grid_list, function(x){
 #     theme_minimal() +
 #     labs(x = NULL)
 # }  )
-
-# # Create list of the raw incidents for each type.
-detroit19_deploy_clip_sf <- detroit19_deploy_clip_sf %>%
-  filter(type != "unclassified") %>%
-  mutate(tos_hours = time_on_scene/60)
-
-# Group into list.
-detroit19_deploy_clip_list <- detroit19_deploy_clip_sf %>%
-  group_split(type)
-
+# 
+# # # Create list of the raw incidents for each type.
+# detroit19_deploy_clip_sf <- detroit19_deploy_clip_sf %>%
+#   filter(type != "unclassified") %>%
+#   mutate(tos_hours = time_on_scene/60)
+# 
+# # Group into list.
+# detroit19_deploy_clip_list <- detroit19_deploy_clip_sf %>%
+#   group_split(type)
+# 
 # # Identify max.
 # max_vec <- max(detroit19_deploy_clip_sf$tos_hours) 
 
@@ -624,31 +629,40 @@ detroit19_deploy_clip_list <- detroit19_deploy_clip_sf %>%
 # Add to each map.
 # maphisto_list <- map2(grid_maps_list, histos_agg_list, histo_fun)
 
-# Adjust quality of life limits due to rounded max, and annotate. Note
-# that this replaces an existing element and replaces previous fill layer.
-grid_maps_list[[5]] <- grid_maps_list[[5]] +
-  scale_fill_continuous(guide = "colourbar", low = "snow", high = "dodgerblue3", n.breaks = 2) +
-                        # limits = c(0,2+max(detroit19_grid_list[[5]]$tos_hours))) +
-  annotation_scale(pad_x = unit(1, "cm"), pad_y = unit(0.1, "cm"), line_width = 1, text_cex = 1, style = "ticks") +
-  annotation_north_arrow(pad_x = unit(2.8, "cm"), pad_y = unit(1.5, "cm"),
-                         style = north_arrow_fancy_orienteering)
-
 # Annotate select maps with key locations.
+
+# community
 grid_maps_list[[1]] <- grid_maps_list[[1]] +
   annotate(geom = "text"    , x = 13467040, y = 322652, label = "WSU campus & Midtown", size = 4) +
-  annotate(geom = "curve" , x = 13467040, y = 320672, xend = 13471640, yend = 316142, size = 0.7,
+  annotate(geom = "curve" , x = 13467040, y = 320672, xend = 13471640, yend = 314242, size = 0.7,
            arrow = arrow(length = unit(0.01, "npc")), curvature = 0.3)
 
-
+# crime
 grid_maps_list[[2]] <- grid_maps_list[[2]] +
   annotate(geom = "text"    , x = 13477040, y = 324802, label = "Henry Ford Hospital", size = 4) +
   annotate(geom = "curve" , x = 13473240, y = 322952, xend = 13470640, yend = 318852, size = 0.7,
-           arrow = arrow(length = unit(0.01, "npc")), curvature = -0.3)
+           arrow = arrow(length = unit(0.01, "npc")), curvature = -0.3) +
+  annotate(geom = "text"    , x = 13497168, y = 337022, label = "Ascension St. John Hospital", size = 4) +
+  annotate(geom = "curve" , x = 13511168, y = 337062, xend = 13515568, yend = 337562, size = 0.7,
+           arrow = arrow(length = unit(0.01, "npc")), curvature = 0.1) +
+  annotate(geom = "text"  , x = 13434648, y = 331826, label = "DMC Sinai Grace Hospital", size = 4) +
+  annotate(geom = "curve" , x = 13437648, y = 333049, xend = 13442046, yend = 336525, size = 0.7,
+           arrow = arrow(length = unit(0.01, "npc")), curvature = -0.2)
 
-grid_maps_list[[6]] <- grid_maps_list[[6]] +
+# health
+grid_maps_list[[3]] <- grid_maps_list[[3]] +
+  annotate(geom = "text"  , x = 13481089, y = 322116, label = "Mental health service facility", size = 4) +
+  annotate(geom = "curve" , x = 13482240, y = 320016, xend = 13485816, yend = 317571, size = 0.7,
+           arrow = arrow(length = unit(0.01, "npc")), curvature = 0.3)
+
+# quality of life
+grid_maps_list[[5]] <- grid_maps_list[[5]] +
   annotate(geom = "text"    , x = 13490040, y = 301652, label = "Downtown", size = 4) +
   annotate(geom = "curve" , x = 13484240, y = 301752, xend = 13481040, yend = 304752, size = 0.7,
-           arrow = arrow(length = unit(0.01, "npc")), curvature = -0.3)
+           arrow = arrow(length = unit(0.01, "npc")), curvature = -0.3) +
+  annotation_scale(pad_x = unit(1, "cm"), pad_y = unit(0.1, "cm"), line_width = 1, text_cex = 1, style = "ticks") +
+  annotation_north_arrow(pad_x = unit(2.8, "cm"), pad_y = unit(1.5, "cm"),
+                         style = north_arrow_fancy_orienteering)
 
 # Arrange maps.
 maps_gg <-  plot_grid(plotlist = grid_maps_list,
