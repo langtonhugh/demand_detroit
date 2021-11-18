@@ -410,15 +410,17 @@ length(unique(detroit19_deploy_df$calldescription2)) # 50
 
 # We use the same incidents for counts/time on scene, so there's no need to recreate the heatmap.
 # If run, it will just create an idenical visual.
+
+# Having said that: we run this chunk because it gives us labels later on!
 # # Aggregate by date and hour.
-# dh_agg_df <- detroit19_deploy_df %>% 
-#   group_by(date_lr, time_lr, week_day, type) %>% 
-#   summarise(call_count = n()) %>% 
-#   ungroup() %>% 
-#   group_by(time_lr, week_day, type) %>% 
-#   summarise(mean_count = mean(call_count)) %>% 
-#   ungroup() %>% 
-#   filter(type != "unclassified")
+dh_agg_df <- detroit19_deploy_df %>%
+  group_by(date_lr, time_lr, week_day, type) %>%
+  summarise(call_count = n()) %>%
+  ungroup() %>%
+  group_by(time_lr, week_day, type) %>%
+  summarise(mean_count = mean(call_count)) %>%
+  ungroup() %>%
+  filter(type != "unclassified")
 # 
 # # Split data frame into list by type.
 # dh_agg_list <- group_split(dh_agg_df, type)
@@ -541,10 +543,34 @@ detroit19_deploy_clip_list <- detroit19_deploy_clip_sf %>%
   filter(type != "unclassified") %>% 
   group_split(type)
 
+# Create some describe stats for the histogram.
 # Explore distributions. Noting the spike at 30 minutes. Outliers removed just for this.
-ggplot(data = filter(detroit19_deploy_clip_sf, time_on_scene/60 < 3)) +
-  geom_histogram(mapping = aes(x = time_on_scene/60, fill = type, group = type), bins = 100) +
-  facet_wrap(~ type, scales = "free_y")
+means_df <- detroit19_deploy_clip_sf %>% 
+  as_tibble() %>% 
+  group_by(type) %>% 
+  summarise(mean_type   = mean(time_on_scene),
+            median_type = median(time_on_scene),
+            counts = n(),
+            y_axis = counts/10) %>% 
+  select(type, mean_type, median_type, counts, y_axis) %>% 
+  ungroup()
+
+# Plot histogram.
+histo_gg <- ggplot() +
+  geom_histogram(data = detroit19_deploy_clip_sf,
+                 mapping = aes(x = time_on_scene/60), bins = 100, fill = "dodgerblue3") +
+  geom_vline(data = means_df,
+             mapping = aes(xintercept = mean_type/60), linetype = "dotted") +
+  geom_vline(data = means_df,
+             mapping = aes(xintercept = median_type/60), linetype = "dotted", col = "red") +
+  geom_text(data = means_df, mapping = aes(label = mean_type, x = 12, y = y_axis)) +
+  facet_wrap(~ type, scales = "free_y") +
+  theme(legend.position = "none") +
+  theme_minimal()
+
+build_gg <- ggplot_build(histo_gg)
+build_gg <- build_gg$data
+
 
 # Create list of the duplicate grid sf objects to match. Not an ideal approach but it works.
 grids_list <- list(detroit_grid_sf, detroit_grid_sf, detroit_grid_sf,
@@ -578,7 +604,7 @@ grid_maps_list <- lapply(detroit19_grid_list, function(x){
   ggplot() +
     geom_sf(data = x, mapping = aes(fill = resolve_time_hours), colour = "transparent") +
     geom_sf(data = detroit_uni_sf, fill = "transparent") +
-    scale_fill_continuous(guide = "colourbar", low = "snow", high = "dodgerblue3", n.breaks = 2) + 
+    scale_fill_continuous(guide = "colourbar", low = "snow", high = "dodgerblue3", n.breaks = 3) + 
     labs(fill = NULL) +
     guides(fill = guide_colourbar(barwidth = 9, barheight = 0.6, draw.ulim = FALSE,
                                   ticks.colour = "black", ticks.linewidth = 2)) +
@@ -635,7 +661,9 @@ grid_maps_list <- lapply(detroit19_grid_list, function(x){
 grid_maps_list[[1]] <- grid_maps_list[[1]] +
   annotate(geom = "text"    , x = 13467040, y = 322652, label = "WSU campus & Midtown", size = 4) +
   annotate(geom = "curve" , x = 13467040, y = 320672, xend = 13471640, yend = 314242, size = 0.7,
-           arrow = arrow(length = unit(0.01, "npc")), curvature = 0.3)
+           arrow = arrow(length = unit(0.01, "npc")), curvature = 0.3) +
+  scale_fill_continuous(guide = "colourbar", low = "snow", high = "dodgerblue3", breaks = c(0,75,150)) 
+  
 
 # crime
 grid_maps_list[[2]] <- grid_maps_list[[2]] +
@@ -653,7 +681,8 @@ grid_maps_list[[2]] <- grid_maps_list[[2]] +
 grid_maps_list[[3]] <- grid_maps_list[[3]] +
   annotate(geom = "text"  , x = 13481089, y = 322116, label = "Mental health service facility", size = 4) +
   annotate(geom = "curve" , x = 13482240, y = 320016, xend = 13485816, yend = 317571, size = 0.7,
-           arrow = arrow(length = unit(0.01, "npc")), curvature = 0.3)
+           arrow = arrow(length = unit(0.01, "npc")), curvature = 0.3) +
+  scale_fill_continuous(guide = "colourbar", low = "snow", high = "dodgerblue3", breaks = c(0,30,60)) 
 
 # quality of life
 grid_maps_list[[5]] <- grid_maps_list[[5]] +
