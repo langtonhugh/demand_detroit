@@ -58,10 +58,6 @@ detroit19_sub_df <- detroit_df %>%
   drop_na(totaltime, time_on_scene) %>%  # note the overlap.
   filter(totaltime >0, time_on_scene >0)
 
-# What is the distribution of total time?
-ggplot(data = detroit19_sub_df) +
-  geom_histogram(mapping = aes(x = time_on_scene), bins = 30)
-
 # First, filter out calldescriptions which are admin, completely unknown or do not appear to
 # involve deployment.
 detroit19_deploy_df <- detroit19_sub_df %>%
@@ -548,29 +544,56 @@ detroit19_deploy_clip_list <- detroit19_deploy_clip_sf %>%
 means_df <- detroit19_deploy_clip_sf %>% 
   as_tibble() %>% 
   group_by(type) %>% 
-  summarise(mean_type   = mean(time_on_scene),
-            median_type = median(time_on_scene),
-            counts = n(),
-            y_axis = counts/10) %>% 
-  select(type, mean_type, median_type, counts, y_axis) %>% 
-  ungroup()
+  summarise(mean_type   = round(mean(time_on_scene)  , 2),
+            median_type = round(median(time_on_scene), 2),
+            min_type    = round(min(time_on_scene)   , 2),
+            max_type    = round(max(time_on_scene)   , 2),
+            sd_type     = round(sd(time_on_scene)    , 2) ) %>% 
+  ungroup() %>% 
+  select(type, mean_type, median_type, min_type, max_type, sd_type) %>% 
+  filter(type != "unclassified")
 
 # Plot histogram.
 histo_gg <- ggplot() +
-  geom_histogram(data = detroit19_deploy_clip_sf,
-                 mapping = aes(x = time_on_scene/60), bins = 100, fill = "dodgerblue3") +
-  geom_vline(data = means_df,
-             mapping = aes(xintercept = mean_type/60), linetype = "dotted") +
-  geom_vline(data = means_df,
-             mapping = aes(xintercept = median_type/60), linetype = "dotted", col = "red") +
-  geom_text(data = means_df, mapping = aes(label = mean_type, x = 12, y = y_axis)) +
-  facet_wrap(~ type, scales = "free_y") +
-  theme(legend.position = "none") +
-  theme_minimal()
+  geom_histogram(data = filter(detroit19_deploy_clip_sf, type != "unclassified"),
+                 mapping = aes(x = time_on_scene), bins = 100, fill = "dodgerblue3") +
+  geom_vline(data = means_df, mapping = aes(xintercept = mean_type)  , linetype = "dotted") +
+  geom_vline(data = means_df, mapping = aes(xintercept = median_type), linetype = "dotted") +
+  geom_vline(data = means_df, mapping = aes(xintercept = max_type)   , linetype = "dotted") +
+  facet_wrap(~ type, scales = "free_y", ncol = 1) +
+  labs(y = NULL, x = "Minutes spent on scene") +
+  theme_minimal() +
+  theme(legend.position = "none",
+        strip.text = element_text(size = 16),
+        axis.text = element_text(size = 14),
+        axis.title.x = element_text(size = 14) ) 
 
-build_gg <- ggplot_build(histo_gg)
-build_gg <- build_gg$data
+# Find relative size of y-axis in the facet, in order to add the descriptive stats. This might be done
+# better with a loop on each plot, but this works for now.
+build_gg <- ggplot_build(histo_gg)     
+build_gg <- build_gg$data              
+build_gg <- as.data.frame(build_gg[1])
 
+means_df <- build_gg %>% 
+  group_by(PANEL) %>% 
+  summarise(max_y = max(ymax)) %>% 
+  ungroup() %>% 
+  mutate(type = unique(dh_agg_df$type)) %>% 
+  left_join(means_df)
+
+# Add descriptive stats to histogram.
+histo_comp_gg <- histo_gg +
+  geom_text(data = means_df, mapping = aes(label = paste("Mean:"  , mean_type, sep = " ")  , x = 600, y = max_y*0.7), hjust = 0, size = 6) +
+  geom_text(data = means_df, mapping = aes(label = paste("Median:", median_type, sep = " "), x = 600, y = max_y*0.6), hjust = 0, size = 6) +
+  geom_text(data = means_df, mapping = aes(label = paste("SD:"    , sd_type    , sep = " "), x = 600, y = max_y*0.5), hjust = 0, size = 6) +
+  geom_text(data = means_df, mapping = aes(label = paste("Min:"   , min_type   , sep = " "), x = 600, y = max_y*0.4), hjust = 0, size = 6) +
+  geom_text(data = means_df, mapping = aes(label = paste("Max:"   , max_type   , sep = " "), x = 600, y = max_y*0.3), hjust = 0, size = 6) +
+  geom_text(data = means_df, mapping = aes(label = "Mean"  , x = mean_type  , y = max_y*0.9), angle = 90, size = 3, vjust = 1.1) +
+  geom_text(data = means_df, mapping = aes(label = "Median", x = median_type, y = max_y*0.9), angle = 90, size = 3, vjust = 1.1) +
+  geom_text(data = means_df, mapping = aes(label = "Max."  , x = max_type   , y = max_y*0.9), angle = 90, size = 3, vjust = 1.1) 
+
+# Save.
+ggsave(plot = histo_comp_gg, filename = "visuals/fig4_histogram_mins.png", height = 20, width = 16)
 
 # Create list of the duplicate grid sf objects to match. Not an ideal approach but it works.
 grids_list <- list(detroit_grid_sf, detroit_grid_sf, detroit_grid_sf,
@@ -596,7 +619,7 @@ names(detroit19_grid_list) <- unique(dh_agg_df$type)
 
 for (i in 1:length(detroit19_grid_list)) {
   st_write(obj = detroit19_grid_list[[i]],
-           dsn = paste("results/", names(detroit19_grid_list[i]), "_tos_map.shp", sep = ""))
+           dsn = paste("results/", names(detroit19_grid_list[i]), "_tos_map.shp", sep = ""), delete_dsn = T)
 }
 
 # Generate maps of incident counts by type.
@@ -677,12 +700,12 @@ grid_maps_list[[2]] <- grid_maps_list[[2]] +
   annotate(geom = "curve" , x = 13437648, y = 333049, xend = 13442046, yend = 336525, size = 0.7,
            arrow = arrow(length = unit(0.01, "npc")), curvature = -0.2)
 
-# health
-grid_maps_list[[3]] <- grid_maps_list[[3]] +
-  annotate(geom = "text"  , x = 13481089, y = 322116, label = "Mental health service facility", size = 4) +
-  annotate(geom = "curve" , x = 13482240, y = 320016, xend = 13485816, yend = 317571, size = 0.7,
-           arrow = arrow(length = unit(0.01, "npc")), curvature = 0.3) +
-  scale_fill_continuous(guide = "colourbar", low = "snow", high = "dodgerblue3", breaks = c(0,30,60)) 
+# health. label not included.
+# grid_maps_list[[3]] <- grid_maps_list[[3]] +
+#   annotate(geom = "text"  , x = 13481089, y = 322116, label = "Mental health service facility", size = 4) +
+#   annotate(geom = "curve" , x = 13482240, y = 320016, xend = 13485816, yend = 317571, size = 0.7,
+#            arrow = arrow(length = unit(0.01, "npc")), curvature = 0.3) +
+#   scale_fill_continuous(guide = "colourbar", low = "snow", high = "dodgerblue3", breaks = c(0,30,60)) 
 
 # quality of life
 grid_maps_list[[5]] <- grid_maps_list[[5]] +

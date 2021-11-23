@@ -578,8 +578,8 @@ grid_maps_list <- lapply(detroit19_grid_list, function(x){
           legend.box = "horizontal")
 })
 
-# Adjust quality of life limits due to rounded max, and annotate. Note
-# that this replaces an existing element and replaces previous fill layer.
+# Adjust quality of life limits due to rounded max, and annotate north arrow and scale.
+# Note that this replaces an existing element and replaces previous fill layer.
 grid_maps_list[[5]] <- grid_maps_list[[5]] +
   scale_fill_continuous(guide = "colourbar", low = "snow", high = "dodgerblue3", n.breaks = 2,
                         limits = c(0,20+max(detroit19_grid_list[[5]]$call_count))) +
@@ -587,22 +587,45 @@ grid_maps_list[[5]] <- grid_maps_list[[5]] +
   annotation_north_arrow(pad_x = unit(2.8, "cm"), pad_y = unit(1.5, "cm"),
                          style = north_arrow_fancy_orienteering)
 
-# Annotate select maps with key locations.
+# Annotate select maps with key locations. Again, this replaces the existing elements and fill layer.
+
+# community
 grid_maps_list[[1]] <- grid_maps_list[[1]] +
   annotate(geom = "text"    , x = 13467040, y = 322652, label = "WSU campus & Midtown", size = 4) +
-  annotate(geom = "curve" , x = 13467040, y = 320672, xend = 13471640, yend = 316142, size = 0.7,
-           arrow = arrow(length = unit(0.01, "npc")), curvature = 0.3)
+  annotate(geom = "curve" , x = 13467040, y = 320672, xend = 13471640, yend = 314242, size = 0.7,
+           arrow = arrow(length = unit(0.01, "npc")), curvature = 0.3) +
+  scale_fill_continuous(guide = "colourbar", low = "snow", high = "dodgerblue3", n.breaks = 2) 
 
 
+# crime
 grid_maps_list[[2]] <- grid_maps_list[[2]] +
   annotate(geom = "text"    , x = 13477040, y = 324802, label = "Henry Ford Hospital", size = 4) +
   annotate(geom = "curve" , x = 13473240, y = 322952, xend = 13470640, yend = 318852, size = 0.7,
-           arrow = arrow(length = unit(0.01, "npc")), curvature = -0.3)
+           arrow = arrow(length = unit(0.01, "npc")), curvature = -0.3) +
+  annotate(geom = "text"    , x = 13497168, y = 337022, label = "Ascension St. John Hospital", size = 4) +
+  annotate(geom = "curve" , x = 13511168, y = 337062, xend = 13515568, yend = 337562, size = 0.7,
+           arrow = arrow(length = unit(0.01, "npc")), curvature = 0.1) +
+  annotate(geom = "text"  , x = 13434648, y = 331826, label = "DMC Sinai Grace Hospital", size = 4) +
+  annotate(geom = "curve" , x = 13437648, y = 333049, xend = 13442046, yend = 336525, size = 0.7,
+           arrow = arrow(length = unit(0.01, "npc")), curvature = -0.2)
 
-grid_maps_list[[6]] <- grid_maps_list[[6]] +
+# health. label not included.
+# grid_maps_list[[3]] <- grid_maps_list[[3]] +
+#   annotate(geom = "text"  , x = 13481089, y = 322116, label = "Mental health service facility", size = 4) +
+#   annotate(geom = "curve" , x = 13482240, y = 320016, xend = 13485816, yend = 317571, size = 0.7,
+#            arrow = arrow(length = unit(0.01, "npc")), curvature = 0.3) +
+#   scale_fill_continuous(guide = "colourbar", low = "snow", high = "dodgerblue3", breaks = c(0,30,60)) 
+
+# quality of life. Note that we also slightly adjust the scale due to rounding making the breaks odd.
+grid_maps_list[[5]] <- grid_maps_list[[5]] +
+  scale_fill_continuous(guide = "colourbar", low = "snow", high = "dodgerblue3", n.breaks = 2,
+                        limits = c(0,1.2*+max(detroit19_grid_list[[5]]$call_count))) +
   annotate(geom = "text"    , x = 13490040, y = 301652, label = "Downtown", size = 4) +
   annotate(geom = "curve" , x = 13484240, y = 301752, xend = 13481040, yend = 304752, size = 0.7,
-           arrow = arrow(length = unit(0.01, "npc")), curvature = -0.3)
+           arrow = arrow(length = unit(0.01, "npc")), curvature = -0.3) +
+  annotation_scale(pad_x = unit(1, "cm"), pad_y = unit(0.1, "cm"), line_width = 1, text_cex = 1, style = "ticks") +
+  annotation_north_arrow(pad_x = unit(2.8, "cm"), pad_y = unit(1.5, "cm"),
+                         style = north_arrow_fancy_orienteering)
 
 # Arrange maps.
 maps_gg <-  plot_grid(plotlist = grid_maps_list,
