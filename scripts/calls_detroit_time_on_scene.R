@@ -544,22 +544,30 @@ detroit19_deploy_clip_list <- detroit19_deploy_clip_sf %>%
 means_df <- detroit19_deploy_clip_sf %>% 
   as_tibble() %>% 
   group_by(type) %>% 
-  summarise(mean_type   = round(mean(time_on_scene)  , 2),
-            median_type = round(median(time_on_scene), 2),
-            min_type    = round(min(time_on_scene)   , 2),
-            max_type    = round(max(time_on_scene)   , 2),
-            sd_type     = round(sd(time_on_scene)    , 2) ) %>% 
-  ungroup() %>% 
-  select(type, mean_type, median_type, min_type, max_type, sd_type) %>% 
+  summarise(Mean   = round(mean(time_on_scene)  , 1),
+            Median = round(median(time_on_scene), 1),
+            Min.   = round(min(time_on_scene)   , 1),
+            Max.   = round(max(time_on_scene)   , 1),
+            SD     = round(sd(time_on_scene)    , 1) ) %>% 
+  ungroup() %>%
+  select(type, Mean, Median, Min., Max., SD) %>%
   filter(type != "unclassified")
+
+# Clean for table in paper.
+means_table_df <- means_df %>% 
+  rename(`Demand type` = type) #%>% 
+  # mutate(Max. = paste(Max., " (", round(Max./60, 1), " hours", ")", sep = "") ) 
+
+# Save.
+write_csv(x = means_table_df, file = "results/table2_des_stats_tos.csv")
 
 # Plot histogram.
 histo_gg <- ggplot() +
   geom_histogram(data = filter(detroit19_deploy_clip_sf, type != "unclassified"),
                  mapping = aes(x = time_on_scene), bins = 100, fill = "dodgerblue3") +
-  geom_vline(data = means_df, mapping = aes(xintercept = mean_type)  , linetype = "dotted") +
-  geom_vline(data = means_df, mapping = aes(xintercept = median_type), linetype = "dotted") +
-  geom_vline(data = means_df, mapping = aes(xintercept = max_type)   , linetype = "dotted") +
+  geom_vline(data = means_df, mapping = aes(xintercept = Mean)  , linetype = "dotted") +
+  geom_vline(data = means_df, mapping = aes(xintercept = Median), linetype = "dotted") +
+  geom_vline(data = means_df, mapping = aes(xintercept = Max.)   , linetype = "dotted") +
   facet_wrap(~ type, scales = "free_y", ncol = 1) +
   labs(y = NULL, x = "Minutes spent on scene") +
   theme_minimal() +
@@ -583,14 +591,14 @@ means_df <- build_gg %>%
 
 # Add descriptive stats to histogram.
 histo_comp_gg <- histo_gg +
-  geom_text(data = means_df, mapping = aes(label = paste("Mean:"  , mean_type, sep = " ")  , x = 600, y = max_y*0.7), hjust = 0, size = 6) +
-  geom_text(data = means_df, mapping = aes(label = paste("Median:", median_type, sep = " "), x = 600, y = max_y*0.6), hjust = 0, size = 6) +
-  geom_text(data = means_df, mapping = aes(label = paste("SD:"    , sd_type    , sep = " "), x = 600, y = max_y*0.5), hjust = 0, size = 6) +
-  geom_text(data = means_df, mapping = aes(label = paste("Min:"   , min_type   , sep = " "), x = 600, y = max_y*0.4), hjust = 0, size = 6) +
-  geom_text(data = means_df, mapping = aes(label = paste("Max:"   , max_type   , sep = " "), x = 600, y = max_y*0.3), hjust = 0, size = 6) +
-  geom_text(data = means_df, mapping = aes(label = "Mean"  , x = mean_type  , y = max_y*0.9), angle = 90, size = 3, vjust = 1.1) +
-  geom_text(data = means_df, mapping = aes(label = "Median", x = median_type, y = max_y*0.9), angle = 90, size = 3, vjust = 1.1) +
-  geom_text(data = means_df, mapping = aes(label = "Max."  , x = max_type   , y = max_y*0.9), angle = 90, size = 3, vjust = 1.1) 
+  geom_text(data = means_df, mapping = aes(label = paste("Mean:"  , Mean, sep = " ")  , x = 600, y = max_y*0.7), hjust = 0, size = 6) +
+  geom_text(data = means_df, mapping = aes(label = paste("Median:", Median, sep = " "), x = 600, y = max_y*0.6), hjust = 0, size = 6) +
+  geom_text(data = means_df, mapping = aes(label = paste("SD:"    , SD    , sep = " "), x = 600, y = max_y*0.5), hjust = 0, size = 6) +
+  geom_text(data = means_df, mapping = aes(label = paste("Min:"   , Min.   , sep = " "), x = 600, y = max_y*0.4), hjust = 0, size = 6) +
+  geom_text(data = means_df, mapping = aes(label = paste("Max:"   , Max.   , sep = " "), x = 600, y = max_y*0.3), hjust = 0, size = 6) +
+  geom_text(data = means_df, mapping = aes(label = "Mean"  , x = Mean  , y = max_y*0.9), angle = 90, size = 3, vjust = 1.1) +
+  geom_text(data = means_df, mapping = aes(label = "Median", x = Median, y = max_y*0.9), angle = 90, size = 3, vjust = 1.1) +
+  geom_text(data = means_df, mapping = aes(label = "Max."  , x = Max.   , y = max_y*0.9), angle = 90, size = 3, vjust = 1.1) 
 
 # Save.
 ggsave(plot = histo_comp_gg, filename = "visuals/fig4_histogram_mins.png", height = 20, width = 16)
