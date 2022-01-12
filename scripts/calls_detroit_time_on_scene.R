@@ -505,6 +505,10 @@ detroit_sf <- st_read("data/Current_City_of_Detroit_Neighborhoods.shp")
 detroit_sf <- detroit_sf %>% 
   st_transform(2253)
 
+# Plot.
+# ggplot(data = detroit_sf) +
+#   geom_sf()
+
 # Create cfs sf object and transform.
 detroit19_deploy_known_sf <- detroit19_deploy_known_df %>% 
   st_as_sf(coords = c(x = "longitude", y = "latitude"), crs = 4326) %>% 
@@ -519,6 +523,10 @@ diss_df <- detroit_sf %>%
 
 # Remove holes. Note the legitimate hole for Highland Park + Hamtramck.
 detroit_uni_sf <- st_remove_holes(diss_df, max_area = 0) # 10000 will keep the parks.
+
+# Plot.
+ggplot(data = detroit_uni_sf) +
+  geom_sf()
 
 # Clip incident points to the Detroit boundary.
 detroit19_deploy_clip_sf <- detroit19_deploy_known_sf %>% 
@@ -548,15 +556,21 @@ means_df <- detroit19_deploy_clip_sf %>%
             Median = round(median(time_on_scene), 1),
             Min.   = round(min(time_on_scene)   , 1),
             Max.   = round(max(time_on_scene)   , 1),
-            SD     = round(sd(time_on_scene)    , 1) ) %>% 
+            # `Total (hours)`  = round(sum(time_on_scene)/60), 0
+            SD     = round(sd(time_on_scene)    , 1),
+            ) %>% 
   ungroup() %>%
   select(type, Mean, Median, Min., Max., SD) %>%
+  # mutate(Total = paste(Total, " (hours)")) %>% 
   filter(type != "unclassified")
 
 # Clean for table in paper.
 means_table_df <- means_df %>% 
   rename(`Demand type` = type) #%>% 
   # mutate(Max. = paste(Max., " (", round(Max./60, 1), " hours", ")", sep = "") ) 
+
+# Total hours? Only works by including `Total (hours)` above.
+# sum(means_df$`Total (hours)`) # 176616
 
 # Save.
 write_csv(x = means_table_df, file = "results/table2_des_stats_tos.csv")
@@ -633,9 +647,10 @@ for (i in 1:length(detroit19_grid_list)) {
 # Generate maps of incident counts by type.
 grid_maps_list <- lapply(detroit19_grid_list, function(x){
   ggplot() +
-    geom_sf(data = x, mapping = aes(fill = resolve_time_hours), colour = "transparent") +
+    geom_sf(data = detroit_sf, fill = "transparent", colour = "grey74") +
     geom_sf(data = detroit_uni_sf, fill = "transparent") +
-    scale_fill_continuous(guide = "colourbar", low = "snow", high = "dodgerblue3", n.breaks = 3) + 
+    geom_sf(data = x, mapping = aes(fill = resolve_time_hours), colour = "transparent") +
+    scale_fill_continuous(guide = "colourbar", low = "transparent", high = "red", n.breaks = 3) + 
     labs(fill = NULL) +
     guides(fill = guide_colourbar(barwidth = 9, barheight = 0.6, draw.ulim = FALSE,
                                   ticks.colour = "black", ticks.linewidth = 2)) +
@@ -646,7 +661,11 @@ grid_maps_list <- lapply(detroit19_grid_list, function(x){
           legend.box = "horizontal")
 })
 
-# Distribution across grids. Heavily skewed.
+# grid_maps_list[[1]]
+
+# grid_maps_list[[1]]
+
+# Distribution across grids.
 # histos_agg_list <- lapply(detroit19_grid_list, function(x){
 #   ggplot(data = x) +
 #     geom_histogram(mapping = aes(x = resolve_time_hours), bins = 60) +
@@ -693,7 +712,7 @@ grid_maps_list[[1]] <- grid_maps_list[[1]] +
   annotate(geom = "text"    , x = 13467040, y = 322652, label = "WSU campus & Midtown", size = 4) +
   annotate(geom = "curve" , x = 13467040, y = 320672, xend = 13471640, yend = 314242, size = 0.7,
            arrow = arrow(length = unit(0.01, "npc")), curvature = 0.3) +
-  scale_fill_continuous(guide = "colourbar", low = "snow", high = "dodgerblue3", breaks = c(0,75,150)) 
+  scale_fill_continuous(guide = "colourbar", low = "transparent", high = "red", n.breaks = 3) + 
   
 
 # crime
@@ -708,12 +727,12 @@ grid_maps_list[[2]] <- grid_maps_list[[2]] +
   annotate(geom = "curve" , x = 13437648, y = 333049, xend = 13442046, yend = 336525, size = 0.7,
            arrow = arrow(length = unit(0.01, "npc")), curvature = -0.2)
 
-# health. label not included.
-# grid_maps_list[[3]] <- grid_maps_list[[3]] +
-#   annotate(geom = "text"  , x = 13481089, y = 322116, label = "Mental health service facility", size = 4) +
-#   annotate(geom = "curve" , x = 13482240, y = 320016, xend = 13485816, yend = 317571, size = 0.7,
-#            arrow = arrow(length = unit(0.01, "npc")), curvature = 0.3) +
-#   scale_fill_continuous(guide = "colourbar", low = "snow", high = "dodgerblue3", breaks = c(0,30,60)) 
+# health. 
+grid_maps_list[[3]] <- grid_maps_list[[3]] +
+  # annotate(geom = "text"  , x = 13481089, y = 322116, label = "Mental health service facility", size = 4) +
+  # annotate(geom = "curve" , x = 13482240, y = 320016, xend = 13485816, yend = 317571, size = 0.7,
+  #          arrow = arrow(length = unit(0.01, "npc")), curvature = 0.3) +
+  scale_fill_continuous(guide = "colourbar", low = "transparent", high = "red", breaks = c(0,30,60))
 
 # quality of life
 grid_maps_list[[5]] <- grid_maps_list[[5]] +
