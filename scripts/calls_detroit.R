@@ -327,13 +327,13 @@ des_stats_df <- detroit_19_times_agg_df %>%
   ungroup()
 
 # Save.
-write_csv(x = des_stats_df, file = "results/table1_des_stats.csv")
+write_csv(x = des_stats_df, file = "results/table1_des_stats_total_time.csv")
 
 # Create categorical colour scheme for future use. Colourblind friendly.
 # col_vec <- c("#c7e9b4", "#7fcdbb", "#41b6c4", "#1d91c0", "#225ea8", "#0c2c84")
 
 # Save data used for proportional breakdown.
-write_csv(x = detroit_19_times_agg_df, file = "results/prop_breakdown.csv")
+write_csv(x = detroit_19_times_agg_df, file = "results/prop_breakdown_total_time.csv")
 
 # Create label variable with line break between words. This for visual purposes only.
 detroit_19_times_agg_df <- detroit_19_times_agg_df %>% 
@@ -341,39 +341,42 @@ detroit_19_times_agg_df <- detroit_19_times_agg_df %>%
 
 length(unique(detroit_19_times_agg_df$calldescription2)) # 46
 
+# Create main colour.
+viridis_1 <- viridis::viridis(5)[2]
+
 # Demand time graphic.
 time_gg <- detroit_19_times_agg_df %>%
   filter(type != "unclassified") %>%
   ggplot(mapping = aes(area = prop_time, label = calldescription2_labs, subgroup = type)) +
   geom_treemap(fill = "snow", colour = "darkgrey", size = 2, alpha = 0.5) +
   geom_treemap_text(padding.y = unit(0.3, "cm"), grow = FALSE) +
-  geom_treemap_subgroup_border(colour = "dodgerblue4", size = 4) +
+  geom_treemap_subgroup_border(colour = viridis_1, size = 4) +
   theme_void() +
-  theme(panel.border  = element_rect(colour = "dodgerblue4", fill = "transparent", size = 1.5))
+  theme(panel.border  = element_rect(colour = viridis_1, fill = "transparent", size = 1.5))
 
 # Portrait version annotations.
 time_ann_gg <- time_gg +
   theme(plot.margin = unit(c(1.5,1.5,1.5,1.5), "cm")) +
   coord_cartesian(xlim = c(0,1), ylim = c(0,1), clip = "off") +
-  annotate(geom = "text", label = "crime"          , colour = "dodgerblue4", 
+  annotate(geom = "text", label = "crime"          , colour = viridis_1, 
            size = 9, x = 0.22, y = 1.065) +
-  annotate(geom = "text", label = "quality of life", colour = "dodgerblue4", 
+  annotate(geom = "text", label = "quality of life", colour = viridis_1, 
            size = 9, x = 0.75, y = -0.065) +
-  annotate(geom = "text", label = "health"      , colour = "dodgerblue4", 
+  annotate(geom = "text", label = "health"      , colour = viridis_1, 
            size = 9, x = 0.59, y = 1.065) +
-  annotate(geom = "text", label = "proactive"      , colour = "dodgerblue4", 
+  annotate(geom = "text", label = "proactive"      , colour = viridis_1, 
            size = 9, x = 0.88, y = 1.065) +
-  annotate(geom = "text", label = "traffic"         , colour = "dodgerblue4",
+  annotate(geom = "text", label = "traffic"         , colour = viridis_1,
            size = 9, x = 1.07, y = 0.53, angle = -90) +
-  annotate(geom = "text", label = "community"         , colour = "dodgerblue4",
+  annotate(geom = "text", label = "community"         , colour = viridis_1,
            size = 9, x = 1.07, y = 0.77, angle = -90) +
   annotate(geom = "text", label = "PPO = Personal Protection Order",
            size = 4, x = -0.045, y = -0.03, hjust = 0) +
   annotate(geom = "text", label = "UDAA = Unlawfully Driving Away of an Automobile",
            size = 4, x = -0.045, y = -0.04, hjust = 0)
 
-# Save portrait version.
-ggsave(filename = "visuals/fig1_time_port.png", height = 48, width = 40, unit = "cm", dpi = 300)
+# Save portrait version (tt = total tiome)
+ggsave(filename = "visuals/fig1_time_total_time.png", height = 48, width = 40, unit = "cm", dpi = 300)
 
 # For further descriptive statistics, we join the new categories back with the raw data.
 detroit19_deploy_df <- detroit19_deploy_df %>% 
@@ -422,8 +425,9 @@ dh_agg_hm_list <- lapply(dh_agg_list, function(x){
   ggplot(data = x) +
     geom_tile(mapping = aes(x = time_lr, y = week_day, fill = mean_count)) +
     scale_x_discrete(labels = 1:24) +
-    scale_fill_continuous(guide = "colourbar", low = "snow", high = "dodgerblue3",
-                          breaks = scales::pretty_breaks(n = 3)) +
+    # scale_fill_continuous(guide = "colourbar", low = "snow", high = "dodgerblue3",
+    #                       breaks = scales::pretty_breaks(n = 3)) +
+    scale_fill_viridis_c(guide = "colourbar", breaks = scales::pretty_breaks(n = 3)) +
     guides(fill = guide_colourbar(barwidth = 0.5, barheight = 4)) +
     labs(fill = NULL, x = NULL, y = NULL) +
     theme_minimal() +
@@ -444,7 +448,7 @@ time_heat_gg <- plot_grid(plotlist = dh_agg_hm_list,
            x = 0.5, y = 0, size = 2)
 
 # Save.
-ggsave(filename = "visuals/fig2_time_heat.png", height = 20, width = 20, unit = "cm", dpi = 300)
+ggsave(filename = "visuals/fig2_time_heat_total_time.png", height = 20, width = 14, unit = "cm", dpi = 300)
 
 # Investigate missings in coordinates.
 sum(is.na(detroit19_deploy_df$latitude))  # 0
@@ -469,8 +473,8 @@ detroit_sample_sf <- detroit19_deploy_df %>%
   st_transform(2253)
 
 # We get spurious coordinates. Clip needed.
-ggplot(data = detroit_sample_sf) +
-  geom_sf()
+# ggplot(data = detroit_sample_sf) +
+#   geom_sf()
 
 # Save csv for exploration in QGIS. I know retrospectively that there is a spurious hotspot,
 # which is ~wasteland, likely due to unknown locations being geocoded to a specific street.
@@ -507,14 +511,21 @@ detroit19_deploy_known_sf <- detroit19_deploy_known_df %>%
   st_transform(2253) 
 
 # Dissolve nhood boundaries as best we can.
-diss_df <- detroit_sf %>% 
-  mutate(n = 1) %>% 
-  group_by(n) %>% 
+diss_df <- detroit_sf %>%
+  mutate(n = 1) %>%
+  group_by(n) %>%
+  summarise(detroit = 1) %>%
+  ungroup()
+
+# Dissolve into council boundaries.
+council_sf <- detroit_sf %>%
+  group_by(council_di) %>% 
   summarise(detroit = 1) %>% 
   ungroup()
 
 # Remove holes. Note the legitimate hole for Highland Park + Hamtramck.
-detroit_uni_sf <- st_remove_holes(diss_df, max_area = 0) # 10000 will keep the parks.
+detroit_uni_sf <- st_remove_holes(diss_df, max_area = 10000) # 10000 will keep the parks, 0 for blank.
+council_sf <- st_remove_holes(council_sf, max_area = 0) 
 
 # Clip incident points to the Detroit boundary.
 detroit19_deploy_clip_sf <- detroit19_deploy_known_sf %>% 
@@ -527,7 +538,7 @@ detroit_grid_sf <- detroit_uni_sf %>%
   st_as_sf()
 
 # Check counts used in maps. Lower due to incomplete coordinates.
-sum(detroit19_deploy_clip_sf$n) # 246971
+sum(detroit19_deploy_clip_sf$n) # 246903
 
 # Split incident sf object into list.
 detroit19_deploy_clip_list <- detroit19_deploy_clip_sf %>% 
@@ -556,24 +567,24 @@ lapply(detroit19_grid_list, function(x){sum(x$call_count)})
 # Save specific maps for exploration in QGIS (optional).
 names(detroit19_grid_list) <- unique(dh_agg_df$type)
 
-for (i in 1:length(detroit19_grid_list)) {
-  st_write(obj = detroit19_grid_list[[i]],
-           dsn = paste("results/", names(detroit19_grid_list[i]), "_map.shp", sep = ""))
-}
+# for (i in 1:length(detroit19_grid_list)) {
+#   st_write(obj = detroit19_grid_list[[i]],
+#            dsn = paste("results/", names(detroit19_grid_list[i]), "_map.shp", sep = ""))
+# }
 
 # Generate maps of incident counts by type.
 grid_maps_list <- lapply(detroit19_grid_list, function(x){
   ggplot() +
-    geom_sf(data = x, mapping = aes(fill = call_count), colour = "transparent") +
-    geom_sf(data = detroit_uni_sf, fill = "transparent") +
-    scale_fill_continuous(guide = "colourbar", low = "snow", high = "dodgerblue3", n.breaks = 2,
+    geom_sf(data = x, mapping = aes(fill = call_count), colour = NA) +
+    geom_sf(data = detroit_uni_sf, fill = NA, colour = "grey78") +
+    scale_fill_continuous(guide = "colourbar", low = "snow", high = viridis_1, n.breaks = 2,
                           limits = c(0,max(x$call_count))) +
     labs(fill = NULL) +
     guides(fill = guide_colourbar(barwidth = 9, barheight = 0.6, draw.ulim = FALSE,
                                   ticks.colour = "black", ticks.linewidth = 2)) +
     theme_void() +
     theme(legend.text = element_text(size = 11),
-          legend.position = c(0.7,0.2),
+          legend.position = c(0.7,0.24),
           legend.direction = "horizontal",
           legend.box = "horizontal")
 })
@@ -581,7 +592,7 @@ grid_maps_list <- lapply(detroit19_grid_list, function(x){
 # Adjust quality of life limits due to rounded max, and annotate north arrow and scale.
 # Note that this replaces an existing element and replaces previous fill layer.
 grid_maps_list[[5]] <- grid_maps_list[[5]] +
-  scale_fill_continuous(guide = "colourbar", low = "snow", high = "dodgerblue3", n.breaks = 2,
+  scale_fill_continuous(guide = "colourbar", low = "snow", high = viridis_1, n.breaks = 2,
                         limits = c(0,20+max(detroit19_grid_list[[5]]$call_count))) +
   annotation_scale(pad_x = unit(1, "cm"), pad_y = unit(0.1, "cm"), line_width = 1, text_cex = 1, style = "ticks") +
   annotation_north_arrow(pad_x = unit(2.8, "cm"), pad_y = unit(1.5, "cm"),
@@ -594,7 +605,7 @@ grid_maps_list[[1]] <- grid_maps_list[[1]] +
   annotate(geom = "text"    , x = 13467040, y = 322652, label = "WSU campus & Midtown", size = 4) +
   annotate(geom = "curve" , x = 13467040, y = 320672, xend = 13471640, yend = 314242, size = 0.7,
            arrow = arrow(length = unit(0.01, "npc")), curvature = 0.3) +
-  scale_fill_continuous(guide = "colourbar", low = "snow", high = "dodgerblue3", n.breaks = 2) 
+  scale_fill_continuous(guide = "colourbar", low = "snow", high = viridis_1, n.breaks = 2) 
 
 
 # crime
@@ -618,7 +629,7 @@ grid_maps_list[[2]] <- grid_maps_list[[2]] +
 
 # quality of life. Note that we also slightly adjust the scale due to rounding making the breaks odd.
 grid_maps_list[[5]] <- grid_maps_list[[5]] +
-  scale_fill_continuous(guide = "colourbar", low = "snow", high = "dodgerblue3", n.breaks = 2,
+  scale_fill_continuous(guide = "colourbar", low = "snow", high = viridis_1, n.breaks = 2,
                         limits = c(0,1.2*+max(detroit19_grid_list[[5]]$call_count))) +
   annotate(geom = "text"    , x = 13490040, y = 301652, label = "Downtown", size = 4) +
   annotate(geom = "curve" , x = 13484240, y = 301752, xend = 13481040, yend = 304752, size = 0.7,
@@ -635,4 +646,4 @@ maps_gg <-  plot_grid(plotlist = grid_maps_list,
                       hjust = 0.5, label_x = 0.5,
                       scale = 1.05)
 # Save.
-ggsave(filename = "visuals/fig3_maps.png", height = 48, width = 40, unit = "cm", dpi = 300)
+ggsave(filename = "visuals/fig3_maps_total_time.png", height = 48, width = 40, unit = "cm", dpi = 300)

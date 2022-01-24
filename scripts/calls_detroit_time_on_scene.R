@@ -341,6 +341,11 @@ detroit_19_times_agg_df <- detroit_19_times_agg_df %>%
 
 length(unique(detroit_19_times_agg_df$calldescription2)) # 50
 
+# 49 categories excluding the various 'other' categories.
+detroit_19_times_agg_df %>% 
+  filter(calldescription2 != "OTHER") %>% 
+  tally()
+
 # Create main colour.
 viridis_1 <- viridis::viridis(5)[2]
 
@@ -376,7 +381,7 @@ time_ann_gg <- time_gg +
            size = 4, x = -0.045, y = -0.04, hjust = 0)
 
 # Save portrait version.
-ggsave(filename = "visuals/fig1_time_port_tos.png", height = 48, width = 40, unit = "cm", dpi = 300)
+ggsave(filename = "visuals/fig1_time_tos.png", height = 48, width = 40, unit = "cm", dpi = 300)
 
 # For further descriptive statistics, we join the new categories back with the raw data.
 detroit19_deploy_df <- detroit19_deploy_df %>% 
