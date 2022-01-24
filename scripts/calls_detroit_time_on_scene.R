@@ -341,31 +341,34 @@ detroit_19_times_agg_df <- detroit_19_times_agg_df %>%
 
 length(unique(detroit_19_times_agg_df$calldescription2)) # 50
 
+# Create main colour.
+viridis_1 <- viridis::viridis(5)[2]
+
 # Demand time graphic.
 time_gg <- detroit_19_times_agg_df %>%
   filter(type != "unclassified") %>%
   ggplot(mapping = aes(area = prop_time, label = calldescription2_labs, subgroup = type)) +
   geom_treemap(fill = "snow", colour = "darkgrey", size = 2, alpha = 0.5) +
   geom_treemap_text(padding.y = unit(0.3, "cm"), grow = FALSE) +
-  geom_treemap_subgroup_border(colour = "dodgerblue4", size = 4) +
+  geom_treemap_subgroup_border(colour = viridis_1, size = 4) +
   theme_void() +
-  theme(panel.border  = element_rect(colour = "dodgerblue4", fill = "transparent", size = 1.5))
+  theme(panel.border  = element_rect(colour = viridis_1, fill = "transparent", size = 1.5))
 
 # Portrait version annotations.
 time_ann_gg <- time_gg +
   theme(plot.margin = unit(c(1.5,1.5,1.5,1.5), "cm")) +
   coord_cartesian(xlim = c(0,1), ylim = c(0,1), clip = "off") +
-  annotate(geom = "text", label = "crime"          , colour = "dodgerblue4", 
+  annotate(geom = "text", label = "crime"          , colour = viridis_1, 
            size = 9, x = 0.22, y = 1.065) +
-  annotate(geom = "text", label = "traffic", colour = "dodgerblue4", 
+  annotate(geom = "text", label = "traffic", colour = viridis_1, 
            size = 9, x = 0.8, y = -0.065) +
-  annotate(geom = "text", label = "health"      , colour = "dodgerblue4", 
+  annotate(geom = "text", label = "health"      , colour = viridis_1, 
            size = 9, x = 0.645, y = 1.065) +
-  annotate(geom = "text", label = "proactive"      , colour = "dodgerblue4", 
+  annotate(geom = "text", label = "proactive"      , colour = viridis_1, 
            size = 9, x = 0.9, y = 1.065) +
-  annotate(geom = "text", label = "quality of life"         , colour = "dodgerblue4",
+  annotate(geom = "text", label = "quality of life"         , colour = viridis_1,
            size = 9, x = 1.07, y = 0.51, angle = -90) +
-  annotate(geom = "text", label = "community"         , colour = "dodgerblue4",
+  annotate(geom = "text", label = "community"         , colour = viridis_1,
            size = 9, x = 1.07, y = 0.78, angle = -90) +
   annotate(geom = "text", label = "PPO = Personal Protection Order",
            size = 4, x = -0.045, y = -0.03, hjust = 0) +
@@ -417,38 +420,39 @@ dh_agg_df <- detroit19_deploy_df %>%
   summarise(mean_count = mean(call_count)) %>%
   ungroup() %>%
   filter(type != "unclassified")
-# 
-# # Split data frame into list by type.
-# dh_agg_list <- group_split(dh_agg_df, type)
-# 
-# # Heatmap graphic.
-# dh_agg_hm_list <- lapply(dh_agg_list, function(x){
-#   ggplot(data = x) +
-#     geom_tile(mapping = aes(x = time_lr, y = week_day, fill = mean_count)) +
-#     scale_x_discrete(labels = 1:24) +
-#     scale_fill_continuous(guide = "colourbar", low = "snow", high = "dodgerblue3",
-#                           breaks = scales::pretty_breaks(n = 3)) +
-#     guides(fill = guide_colourbar(barwidth = 0.5, barheight = 4)) +
-#     labs(fill = NULL, x = NULL, y = NULL) +
-#     theme_minimal() +
-#     theme(legend.text = element_text(size = 5),
-#           axis.text   = element_text(size = 6), 
-#           legend.text.align = 0.5)
-# })
-# 
-# # Arrange and annotate graphic.
-# time_heat_gg <- plot_grid(plotlist = dh_agg_hm_list,
-#                           ncol = 1,
-#                           labels = unique(dh_agg_df$type),
-#                           label_size = 8, label_fontface = "plain",
-#                           hjust = 0.5, label_x = 0.5,
-#                           scale = 0.9) +
-#   theme(plot.margin = unit(c(0,0,0.2,0), "cm")) +
-#   annotate(geom = "text", label = "hours of the day",
-#            x = 0.5, y = 0, size = 2)
-# 
-# # Save.
-# ggsave(filename = "visuals/fig2_time_heat_tos.png", height = 20, width = 20, unit = "cm", dpi = 300)
+
+# Split data frame into list by type.
+dh_agg_list <- group_split(dh_agg_df, type)
+
+# Heatmap graphic.
+dh_agg_hm_list <- lapply(dh_agg_list, function(x){
+  ggplot(data = x) +
+    geom_tile(mapping = aes(x = time_lr, y = week_day, fill = mean_count), alpha = 0.9) +
+    scale_x_discrete(labels = 1:24) +
+    # scale_fill_continuous(guide = "colourbar", low = "snow", high = "dodgerblue3",
+    #                       breaks = scales::pretty_breaks(n = 3)) +
+    scale_fill_viridis_c(guide = "colourbar", breaks = scales::pretty_breaks(n = 3)) +
+    guides(fill = guide_colourbar(barwidth = 0.5, barheight = 4)) +
+    labs(fill = NULL, x = NULL, y = NULL) +
+    theme_minimal() +
+    theme(legend.text = element_text(size = 5),
+          axis.text   = element_text(size = 6),
+          legend.text.align = 0.5)
+})
+
+# Arrange and annotate graphic.
+time_heat_gg <- plot_grid(plotlist = dh_agg_hm_list,
+                          ncol = 1,
+                          labels = unique(dh_agg_df$type),
+                          label_size = 8, label_fontface = "plain",
+                          hjust = 0.5, label_x = 0.5,
+                          scale = 0.9) +
+  theme(plot.margin = unit(c(0,0,0.2,0), "cm")) +
+  annotate(geom = "text", label = "hours of the day",
+           x = 0.5, y = 0, size = 2)
+
+# Save.
+ggsave(filename = "visuals/fig2_time_heat_tos.png", height = 20, width = 14, unit = "cm", dpi = 300)
 
 # Investigate missings in coordinates.
 sum(is.na(detroit19_deploy_df$latitude))  # 0
@@ -473,8 +477,8 @@ detroit_sample_sf <- detroit19_deploy_df %>%
   st_transform(2253)
 
 # We get spurious coordinates. Clip needed.
-ggplot(data = detroit_sample_sf) +
-  geom_sf()
+# ggplot(data = detroit_sample_sf) +
+#   geom_sf()
 
 # Save csv for exploration in QGIS. I know retrospectively that there is a spurious hotspot,
 # which is ~wasteland, likely due to unknown locations being geocoded to a specific street.
@@ -515,18 +519,25 @@ detroit19_deploy_known_sf <- detroit19_deploy_known_df %>%
   st_transform(2253) 
 
 # Dissolve nhood boundaries as best we can.
-diss_df <- detroit_sf %>% 
-  mutate(n = 1) %>% 
-  group_by(n) %>% 
+diss_df <- detroit_sf %>%
+  mutate(n = 1) %>%
+  group_by(n) %>%
+  summarise(detroit = 1) %>%
+  ungroup()
+
+# Dissolve into council boundaries.
+council_sf <- detroit_sf %>%
+  group_by(council_di) %>% 
   summarise(detroit = 1) %>% 
   ungroup()
 
 # Remove holes. Note the legitimate hole for Highland Park + Hamtramck.
-detroit_uni_sf <- st_remove_holes(diss_df, max_area = 0) # 10000 will keep the parks.
+detroit_uni_sf <- st_remove_holes(diss_df, max_area = 10000) # 10000 will keep the parks, 0 for blank.
+council_sf <- st_remove_holes(council_sf, max_area = 0) 
 
 # Plot.
-ggplot(data = detroit_uni_sf) +
-  geom_sf()
+# ggplot(data = detroit_uni_sf) +
+#   geom_sf()
 
 # Clip incident points to the Detroit boundary.
 detroit19_deploy_clip_sf <- detroit19_deploy_known_sf %>% 
@@ -578,7 +589,7 @@ write_csv(x = means_table_df, file = "results/table2_des_stats_tos.csv")
 # Plot histogram.
 histo_gg <- ggplot() +
   geom_histogram(data = filter(detroit19_deploy_clip_sf, type != "unclassified"),
-                 mapping = aes(x = time_on_scene), bins = 100, fill = "dodgerblue3") +
+                 mapping = aes(x = time_on_scene), bins = 100, fill = viridis_1) +
   geom_vline(data = means_df, mapping = aes(xintercept = Mean)  , linetype = "dotted") +
   geom_vline(data = means_df, mapping = aes(xintercept = Median), linetype = "dotted") +
   geom_vline(data = means_df, mapping = aes(xintercept = Max.)   , linetype = "dotted") +
@@ -615,7 +626,7 @@ histo_comp_gg <- histo_gg +
   geom_text(data = means_df, mapping = aes(label = "Max."  , x = Max.   , y = max_y*0.9), angle = 90, size = 3, vjust = 1.1) 
 
 # Save.
-ggsave(plot = histo_comp_gg, filename = "visuals/fig4_histogram_mins.png", height = 20, width = 16)
+ggsave(plot = histo_comp_gg, filename = "visuals/fig4_histogram_mins_tos.png", height = 20, width = 16)
 
 # Create list of the duplicate grid sf objects to match. Not an ideal approach but it works.
 grids_list <- list(detroit_grid_sf, detroit_grid_sf, detroit_grid_sf,
@@ -647,10 +658,12 @@ for (i in 1:length(detroit19_grid_list)) {
 # Generate maps of incident counts by type.
 grid_maps_list <- lapply(detroit19_grid_list, function(x){
   ggplot() +
-    geom_sf(data = detroit_sf, fill = "transparent", colour = "grey74") +
-    geom_sf(data = detroit_uni_sf, fill = "transparent") +
-    geom_sf(data = x, mapping = aes(fill = resolve_time_hours), colour = "transparent") +
-    scale_fill_continuous(guide = "colourbar", low = "transparent", high = "red", n.breaks = 3) + 
+    # geom_sf(data = detroit_uni_sf, fill = NA, colour = "black") +
+    # scale_fill_continuous(guide = "colourbar", low = "transparent", high = "red", n.breaks = 3) + 
+    geom_sf(data = x, mapping = aes(fill = resolve_time_hours), colour = NA) +
+    geom_sf(data = detroit_uni_sf, fill = NA, colour = "grey78") +
+    scale_fill_continuous(guide = "colourbar", low = "snow", high = viridis_1, n.breaks = 3) +
+    # scale_fill_viridis_c(guide = "colourbar", n.breaks = 3) +
     labs(fill = NULL) +
     guides(fill = guide_colourbar(barwidth = 9, barheight = 0.6, draw.ulim = FALSE,
                                   ticks.colour = "black", ticks.linewidth = 2)) +
@@ -660,8 +673,6 @@ grid_maps_list <- lapply(detroit19_grid_list, function(x){
           legend.direction = "horizontal",
           legend.box = "horizontal")
 })
-
-# grid_maps_list[[1]]
 
 # grid_maps_list[[1]]
 
@@ -712,15 +723,15 @@ grid_maps_list[[1]] <- grid_maps_list[[1]] +
   annotate(geom = "text"    , x = 13467040, y = 322652, label = "WSU campus & Midtown", size = 4) +
   annotate(geom = "curve" , x = 13467040, y = 320672, xend = 13471640, yend = 314242, size = 0.7,
            arrow = arrow(length = unit(0.01, "npc")), curvature = 0.3) +
-  scale_fill_continuous(guide = "colourbar", low = "transparent", high = "red", n.breaks = 3) + 
+  scale_fill_continuous(guide = "colourbar", low = "snow", high = viridis_1, n.breaks = 3) 
   
 
 # crime
 grid_maps_list[[2]] <- grid_maps_list[[2]] +
-  annotate(geom = "text"    , x = 13477040, y = 324802, label = "Henry Ford Hospital", size = 4) +
+  annotate(geom = "text"  , x = 13477040, y = 324802, label = "Henry Ford Hospital", size = 4) +
   annotate(geom = "curve" , x = 13473240, y = 322952, xend = 13470640, yend = 318852, size = 0.7,
            arrow = arrow(length = unit(0.01, "npc")), curvature = -0.3) +
-  annotate(geom = "text"    , x = 13497168, y = 337022, label = "Ascension St. John Hospital", size = 4) +
+  annotate(geom = "text"  , x = 13497168, y = 337022, label = "Ascension St. John Hospital", size = 4) +
   annotate(geom = "curve" , x = 13511168, y = 337062, xend = 13515568, yend = 337562, size = 0.7,
            arrow = arrow(length = unit(0.01, "npc")), curvature = 0.1) +
   annotate(geom = "text"  , x = 13434648, y = 331826, label = "DMC Sinai Grace Hospital", size = 4) +
@@ -732,7 +743,7 @@ grid_maps_list[[3]] <- grid_maps_list[[3]] +
   # annotate(geom = "text"  , x = 13481089, y = 322116, label = "Mental health service facility", size = 4) +
   # annotate(geom = "curve" , x = 13482240, y = 320016, xend = 13485816, yend = 317571, size = 0.7,
   #          arrow = arrow(length = unit(0.01, "npc")), curvature = 0.3) +
-  scale_fill_continuous(guide = "colourbar", low = "transparent", high = "red", breaks = c(0,30,60))
+  scale_fill_continuous(guide = "colourbar", low = "snow", high = viridis_1, n.breaks = 3, breaks = c(0,30,60))
 
 # quality of life
 grid_maps_list[[5]] <- grid_maps_list[[5]] +
