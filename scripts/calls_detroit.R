@@ -155,10 +155,10 @@ calldesc2_df <- detroit19_deploy_df %>%
   arrange(calldescription)
 
 # Save for reader reference.
-calldesc2_df %>% 
-  rename(calldescription_original = calldescription,
-         calldescription_new      = calldescription2) %>% 
-write_csv(file = "results/categorisation_summary.csv")
+# calldesc2_df %>% 
+#   rename(calldescription_original = calldescription,
+#          calldescription_new      = calldescription2) %>% 
+# write_csv(file = "results/categorisation_summary.csv")
 
 # Aggregate.
 detroit_19_times_df <- detroit19_deploy_df %>% 

@@ -1,6 +1,6 @@
 Project describing the scale and composition of emergency calls for police service in Detroit, United States.
 
-**Steps for reproduction**
+**Steps for reproduction in R**
 
 - Download or clone the entire GitHub repository to your local machine.
 - Download the [open calls for service data](https://data.detroitmi.gov/datasets/detroitmi::911-calls-for-service/about) and save it in the _data_ folder as a csv, naming it 'detroit_16_21.csv'.
@@ -12,7 +12,7 @@ Project describing the scale and composition of emergency calls for police servi
 
 - The download links above can be used to explore the data in your software (e.g., Excel, QGIS).
 - The graphics reported in the paper can be viewed in the _visuals_ folder.
-- Findings and reference tables (e.g., categorisation summary) can be found in the _results_ folder.
+- Findings and reference tables (e.g., categorization summary) can be found in the _results_ folder.
 
 **Contact**
 

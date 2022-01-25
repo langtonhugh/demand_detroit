@@ -155,10 +155,10 @@ calldesc2_df <- detroit19_deploy_df %>%
   arrange(calldescription)
 
 # Save for reader reference. No need to save again.
-# calldesc2_df %>% 
-#   rename(calldescription_original = calldescription,
-#          calldescription_new      = calldescription2) %>% 
-# write_csv(file = "results/categorisation_summary.csv")
+calldesc2_df %>%
+  rename(calldescription_original = calldescription,
+         calldescription_new      = calldescription2) %>%
+write_csv(file = "results/categorization_summary.csv")
 
 # Aggregate.
 detroit_19_times_df <- detroit19_deploy_df %>% 
@@ -363,17 +363,17 @@ time_gg <- detroit_19_times_agg_df %>%
 time_ann_gg <- time_gg +
   theme(plot.margin = unit(c(1.5,1.5,1.5,1.5), "cm")) +
   coord_cartesian(xlim = c(0,1), ylim = c(0,1), clip = "off") +
-  annotate(geom = "text", label = "crime"          , colour = viridis_1, 
+  annotate(geom = "text", label = "crime"  , colour = viridis_1, 
            size = 9, x = 0.22, y = 1.065) +
   annotate(geom = "text", label = "traffic", colour = viridis_1, 
            size = 9, x = 0.8, y = -0.065) +
-  annotate(geom = "text", label = "health"      , colour = viridis_1, 
+  annotate(geom = "text", label = "health" , colour = viridis_1, 
            size = 9, x = 0.645, y = 1.065) +
-  annotate(geom = "text", label = "proactive"      , colour = viridis_1, 
+  annotate(geom = "text", label = "proactive" , colour = viridis_1, 
            size = 9, x = 0.9, y = 1.065) +
-  annotate(geom = "text", label = "quality of life"         , colour = viridis_1,
+  annotate(geom = "text", label = "quality of life" , colour = viridis_1,
            size = 9, x = 1.07, y = 0.51, angle = -90) +
-  annotate(geom = "text", label = "community"         , colour = viridis_1,
+  annotate(geom = "text", label = "community"       , colour = viridis_1,
            size = 9, x = 1.07, y = 0.78, angle = -90) +
   annotate(geom = "text", label = "PPO = Personal Protection Order",
            size = 4, x = -0.045, y = -0.03, hjust = 0) +
@@ -590,6 +590,46 @@ means_table_df <- means_df %>%
 
 # Save.
 write_csv(x = means_table_df, file = "results/table2_des_stats_tos.csv")
+
+# Calculate concentration of calls.
+names(detroit19_deploy_clip_sf)
+nrow(detroit19_deploy_clip_sf)
+
+# Concentration statistics.
+library(lorenzgini)
+
+# Split time on scene into simple tibble by demand classification.
+demands_time_list <-  detroit19_deploy_clip_sf %>% 
+  as_tibble() %>% 
+  select(incident_id, type, time_on_scene) %>% 
+  filter(type != "unclassified") %>% 
+  group_split(type)
+
+# Run lorenz through the list.
+lorenz_plot_list <- lapply(demands_time_list, function(x){lorenz(x$time_on_scene)} )
+
+# Function for pulling out relevant columns.
+lorenz_pull <- function(x){
+  temp <- x %>% 
+    ggplot_build() %>% 
+    purrr::pluck("plot") 
+  as_tibble(as.data.frame(temp[1]))
+}
+
+# Find id.
+type_id <- unique(dh_agg_df$type)
+
+# Run pull through plots.
+lorenz_results_list <- lapply(lorenz_plot_list, lorenz_pull)
+
+# Stick back together.
+lorenz_results_df <- lorenz_results_list %>% 
+  bind_rows(.id = "type")
+
+# Plot function.
+ggplot() +
+    geom_line(data = lorenz_results_df, mapping = aes(x = data.cumpercUnit, y = data.cumpercEvents, colour = type, group = type)) +
+    geom_line(mapping = aes(x = 0:100, y = 0:100), linetype = "dashed")
 
 # Plot histogram.
 histo_gg <- ggplot() +
