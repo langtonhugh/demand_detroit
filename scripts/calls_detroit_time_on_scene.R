@@ -603,7 +603,11 @@ demands_time_list <-  detroit19_deploy_clip_sf %>%
   as_tibble() %>% 
   select(incident_id, type, time_on_scene) %>% 
   filter(type != "unclassified") %>% 
-  group_split(type)
+  group_split(type) 
+
+# Name the elements. Bit messy.
+temp_names <- filter(detroit19_deploy_clip_sf, type != "unclassified")
+names(demands_time_list) <- sort(unique(temp_names$type))
 
 # Run lorenz through the list.
 lorenz_plot_list <- lapply(demands_time_list, function(x){lorenz(x$time_on_scene)} )
@@ -616,9 +620,6 @@ lorenz_pull <- function(x){
   as_tibble(as.data.frame(temp[1]))
 }
 
-# Find id.
-type_id <- unique(dh_agg_df$type)
-
 # Run pull through plots.
 lorenz_results_list <- lapply(lorenz_plot_list, lorenz_pull)
 
@@ -626,10 +627,35 @@ lorenz_results_list <- lapply(lorenz_plot_list, lorenz_pull)
 lorenz_results_df <- lorenz_results_list %>% 
   bind_rows(.id = "type")
 
-# Plot function.
+# Plot.
 ggplot() +
-    geom_line(data = lorenz_results_df, mapping = aes(x = data.cumpercUnit, y = data.cumpercEvents, colour = type, group = type)) +
-    geom_line(mapping = aes(x = 0:100, y = 0:100), linetype = "dashed")
+    geom_line(data = lorenz_results_df,
+              mapping = aes(x = data.cumpercUnit, y = data.cumpercEvents,
+                            colour = type, group = type),
+              size = 2) +
+    geom_line(mapping = aes(x = 0:100, y = 0:100), linetype = "dashed") +
+  scale_color_viridis_d() +
+  labs(colour = NULL, x = "Cumulative percent of calls",
+       y = "Cumulative percent of time on scene") +
+  theme_bw() 
+
+# # Check whether the order in the above is correct, since it was a bit messy.
+# crime_time__df <-  detroit19_deploy_clip_sf %>% 
+#   as_tibble() %>% 
+#   select(incident_id, type, time_on_scene) %>% 
+#   filter(type == "crime")
+# 
+# crime_lorenz <- lorenz(crime_time__df$time_on_scene)
+# crime_lorenz_df <- lorenz_pull(crime_lorenz)
+# 
+# # The lines should overlap perfectly.
+# ggplot() +
+#   geom_line(data = crime_lorenz_df,
+#             mapping = aes(x = data.cumpercUnit, y = data.cumpercEvents),
+#             col = "black", size = 3) +
+#   geom_line(data = filter(lorenz_results_df, type == "crime"),
+#             mapping = aes(x = data.cumpercUnit, y = data.cumpercEvents), col = "white") +
+#   geom_line(mapping = aes(x = 0:100, y = 0:100), linetype = "dashed")
 
 # Plot histogram.
 histo_gg <- ggplot() +
