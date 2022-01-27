@@ -632,12 +632,15 @@ ggplot() +
     geom_line(data = lorenz_results_df,
               mapping = aes(x = data.cumpercUnit, y = data.cumpercEvents,
                             colour = type, group = type),
-              size = 2) +
+              size = 1.5, alpha = 0.8) +
     geom_line(mapping = aes(x = 0:100, y = 0:100), linetype = "dashed") +
   scale_color_viridis_d() +
   labs(colour = NULL, x = "Cumulative percent of calls",
        y = "Cumulative percent of time on scene") +
   theme_bw() 
+
+# Save.
+ggsave(file = "visuals/lorenz_demands.png", height = 10, width = 14, unit = "cm")
 
 # # Check whether the order in the above is correct, since it was a bit messy.
 # crime_time__df <-  detroit19_deploy_clip_sf %>% 
