@@ -331,7 +331,7 @@ des_stats_df <- detroit_19_times_agg_df %>%
   ungroup()
 
 # Save.
-write_csv(x = des_stats_df, file = "results/table1_des_stats_tos.csv")
+write_csv(x = des_stats_df, file = "results/table2_des_stats_tos.csv")
 
 # Create categorical colour scheme for future use. Colourblind friendly.
 # col_vec <- c("#c7e9b4", "#7fcdbb", "#41b6c4", "#1d91c0", "#225ea8", "#0c2c84")
@@ -601,7 +601,7 @@ means_table_df <- means_df %>%
 # sum(means_df$`Total (hours)`) # 176616
 
 # Save.
-write_csv(x = means_table_df, file = "results/table2_des_stats_tos.csv")
+write_csv(x = means_table_df, file = "results/table3_des_stats_tos.csv")
 
 # Calculate concentration of calls.
 names(detroit19_deploy_clip_sf)
@@ -675,7 +675,7 @@ lorenz_gg <- ggplot() +
   geom_point(data = lorenz_example_df,
              mapping = aes(x = data.cumpercUnit, y = data.cumpercEvents, group = thresh), size = 1.5) +
   geom_line(mapping = aes(x = 0:100, y = 0:100), linetype = "dotted", alpha = 0.3) +
-  annotate(geom = "text", x = 75, y = 79, label = "Line of perfect equality", angle = 43, size = 2, alpha = 0.5) +
+  annotate(geom = "text", x = 75, y = 79, label = "Line of perfect equality", angle = 42.5, size = 2, alpha = 0.5) +
   annotate(geom = "text", x = 15, y = 80, label = "50% of time on scene\n consumed by 15% of calls", size = 2, hjust = 0.5) +
   annotate(geom = "curve" , x = 9, y = 75, xend = 13, yend = 52, size = 0.3, arrow = arrow(length = unit(0.01, "npc")), curvature = 0.3) +
   annotate(geom = "text"  , x = 35 , y = 46, label = "25% of time on scene\n consumed by 5% of calls", size = 2, hjust = 0.5) +

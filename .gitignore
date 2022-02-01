@@ -21,6 +21,9 @@ results/*.prj
 *.bib
 *.csl
 
+# Paper back-up
+!paper.Rmd
+
 # History files
 .Rhistory
 .Rapp.history
