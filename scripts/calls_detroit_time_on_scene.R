@@ -9,12 +9,16 @@ library(purrr)
 library(forcats)
 library(stringr)
 library(lubridate)
+library(lorenzgini)
 library(treemapify)
 library(ggplot2)
 library(sf)
 
 # Useful function.
 `%nin%` <- Negate(`%in%`)
+
+# Load workspace.
+# load(file = "data/workspace_complete.RData")
 
 # 2016-2021 911 calls for service from Detroit open data portal.
 # https://data.detroitmi.gov/datasets/911-calls-for-service?geometry=-86.035%2C42.028%2C-80.808%2C42.738
@@ -457,7 +461,7 @@ time_heat_gg <- plot_grid(plotlist = dh_agg_hm_list,
            x = 0.5, y = 0, size = 2)
 
 # Save.
-ggsave(filename = "visuals/fig2_time_heat_tos.png", height = 20, width = 14, unit = "cm", dpi = 300)
+ggsave(filename = "visuals/fig3_time_heat_tos.png", height = 20, width = 14, unit = "cm", dpi = 300)
 
 # Investigate missings in coordinates.
 sum(is.na(detroit19_deploy_df$latitude))  # 0
@@ -555,6 +559,14 @@ detroit_grid_sf <- detroit_uni_sf %>%
   st_as_sf() %>% 
   mutate(grid_id = 1:nrow(.))
 
+# Clip the grid to the Detroit boundary.
+detroit_grid_sf <- detroit_grid_sf %>% 
+  st_intersection(detroit_uni_sf)
+
+# Plot.
+# ggplot(data = detroit_grid_sf) +
+#   geom_sf()
+
 # Check counts used in maps. Lower due to incomplete coordinates.
 sum(detroit19_deploy_clip_sf$n) # 246971
 
@@ -595,8 +607,7 @@ write_csv(x = means_table_df, file = "results/table2_des_stats_tos.csv")
 names(detroit19_deploy_clip_sf)
 nrow(detroit19_deploy_clip_sf)
 
-# Concentration statistics.
-library(lorenzgini)
+# Concentration statistics (tangent).
 
 # Split time on scene into simple tibble by demand classification.
 demands_time_list <-  detroit19_deploy_clip_sf %>% 
@@ -627,20 +638,55 @@ lorenz_results_list <- lapply(lorenz_plot_list, lorenz_pull)
 lorenz_results_df <- lorenz_results_list %>% 
   bind_rows(.id = "type")
 
+# Calculate it for the whole data.
+temp_lorenz_df <- detroit19_deploy_clip_sf %>% 
+  as_tibble() %>% 
+  filter(type != "unclassified")
+
+full_lorenz_df <- lorenz_pull(lorenz(temp_lorenz_df$time_on_scene))
+
+# Obtain an example from this.
+lorenz_example50_df <- full_lorenz_df %>% 
+  mutate(data.cumpercEvents_round = round(data.cumpercEvents, 2)) %>% 
+  filter(data.cumpercEvents_round == 50) %>% 
+  slice(1) %>% 
+  mutate(thresh = "fifty")
+
+lorenz_example25_df <- full_lorenz_df %>% 
+  mutate(data.cumpercEvents_round = round(data.cumpercEvents, 2)) %>% 
+  filter(data.cumpercEvents_round == 25) %>% 
+  slice(1) %>% 
+  mutate(thresh = "twenfive")
+
+lorenz_example_df <- bind_rows(lorenz_example50_df, lorenz_example25_df)
+
 # Plot.
-ggplot() +
-    geom_line(data = lorenz_results_df,
-              mapping = aes(x = data.cumpercUnit, y = data.cumpercEvents,
-                            colour = type, group = type),
-              size = 1.5, alpha = 0.8) +
-    geom_line(mapping = aes(x = 0:100, y = 0:100), linetype = "dashed") +
-  scale_color_viridis_d() +
-  labs(colour = NULL, x = "Cumulative percent of calls",
-       y = "Cumulative percent of time on scene") +
-  theme_bw() 
+lorenz_gg <- ggplot() +
+  geom_line(data = lorenz_results_df,
+            mapping = aes(x = data.cumpercUnit, y = data.cumpercEvents, group = type), alpha = 0.3) +
+  geom_line(data = full_lorenz_df,
+            mapping = aes(x = data.cumpercUnit, y = data.cumpercEvents), colour = viridis_1, size = 1.5, alpha = 0.8) +
+  geom_segment(data = lorenz_example_df,
+               mapping = aes(x = 0, xend = data.cumpercUnit, yend = data.cumpercEvents, y = data.cumpercEvents, group = thresh),
+               linetype = "dashed") +
+  geom_segment(data = lorenz_example_df,
+               mapping = aes(x = data.cumpercUnit, xend = data.cumpercUnit, y = 0, yend = data.cumpercEvents, group = thresh),
+               linetype = "dashed") +
+  geom_point(data = lorenz_example_df,
+             mapping = aes(x = data.cumpercUnit, y = data.cumpercEvents, group = thresh), size = 1.5) +
+  geom_line(mapping = aes(x = 0:100, y = 0:100), linetype = "dotted", alpha = 0.3) +
+  annotate(geom = "text", x = 75, y = 79, label = "Line of perfect equality", angle = 43, size = 2, alpha = 0.5) +
+  annotate(geom = "text", x = 15, y = 80, label = "50% of time on scene\n consumed by 15% of calls", size = 2, hjust = 0.5) +
+  annotate(geom = "curve" , x = 9, y = 75, xend = 13, yend = 52, size = 0.3, arrow = arrow(length = unit(0.01, "npc")), curvature = 0.3) +
+  annotate(geom = "text"  , x = 35 , y = 46, label = "25% of time on scene\n consumed by 5% of calls", size = 2, hjust = 0.5) +
+  annotate(geom = "curve" , x = 27, y = 41, xend = 6, yend = 25, size = 0.3, arrow = arrow(length = unit(0.01, "npc")), curvature = -0.3) +
+  labs(colour = NULL, x = "Cumulative percent of calls", y = "Cumulative percent of time on scene") +
+  theme_bw() +
+  theme(axis.title = element_text(size = 8),
+        axis.text = element_text(size = 7))
 
 # Save.
-ggsave(file = "visuals/lorenz_demands.png", height = 10, width = 14, unit = "cm")
+ggsave(plot = lorenz_gg, file = "visuals/fig2_lorenz_demands.png", height = 9, width = 10, unit = "cm")
 
 # # Check whether the order in the above is correct, since it was a bit messy.
 # crime_time__df <-  detroit19_deploy_clip_sf %>% 
@@ -700,9 +746,10 @@ histo_comp_gg <- histo_gg +
   geom_text(data = means_df, mapping = aes(label = "Max."  , x = Max.   , y = max_y*0.9), angle = 90, size = 3, vjust = 1.1) 
 
 # Save.
-ggsave(plot = histo_comp_gg, filename = "visuals/fig4_histogram_mins_tos.png", height = 20, width = 16)
+ggsave(plot = histo_comp_gg, filename = "visuals/fig6_histogram_mins_tos.png", height = 20, width = 16)
 
 # Create list of the duplicate grid sf objects to match. Not an ideal approach but it works.
+#grids_list <- rep(list(detroit_grid_sf), 6) # run this instead if the below produced length of 18.
 grids_list <- list(detroit_grid_sf, detroit_grid_sf, detroit_grid_sf,
                    detroit_grid_sf, detroit_grid_sf, detroit_grid_sf)
 
@@ -724,20 +771,20 @@ detroit19_grid_list <- map2(grids_list, detroit19_deploy_clip_list, p2p_fun)
 # Save specific maps for exploration in QGIS (optional).
 names(detroit19_grid_list) <- unique(dh_agg_df$type)
 
-for (i in 1:length(detroit19_grid_list)) {
-  st_write(obj = detroit19_grid_list[[i]],
-           dsn = paste("results/", names(detroit19_grid_list[i]), "_tos_map.shp", sep = ""), delete_dsn = T)
-}
+# for (i in 1:length(detroit19_grid_list)) {
+#   st_write(obj = detroit19_grid_list[[i]],
+#            dsn = paste("results/", names(detroit19_grid_list[i]), "_tos_map.shp", sep = ""), delete_dsn = T)
+# }
 
 # Generate maps of incident counts by type.
 grid_maps_list <- lapply(detroit19_grid_list, function(x){
   ggplot() +
     # geom_sf(data = detroit_uni_sf, fill = NA, colour = "black") +
     # scale_fill_continuous(guide = "colourbar", low = "transparent", high = "red", n.breaks = 3) + 
-    geom_sf(data = x, mapping = aes(fill = resolve_time_hours), colour = NA) +
-    geom_sf(data = detroit_uni_sf, fill = NA, colour = "grey78") +
-    scale_fill_continuous(guide = "colourbar", low = "snow", high = viridis_1, n.breaks = 3) +
-    # scale_fill_viridis_c(guide = "colourbar", n.breaks = 3) +
+    geom_sf(data = x, mapping = aes(fill = resolve_time_hours), colour = "transparent") +
+    # geom_sf(data = detroit_uni_sf, fill = NA, colour = "grey78") +
+    # scale_fill_continuous(guide = "colourbar", low = "snow", high = viridis_1, n.breaks = 3) +
+    scale_fill_viridis_c(guide = "colourbar", n.breaks = 3, alpha = 0.9) +
     labs(fill = NULL) +
     guides(fill = guide_colourbar(barwidth = 9, barheight = 0.6, draw.ulim = FALSE,
                                   ticks.colour = "black", ticks.linewidth = 2)) +
@@ -794,30 +841,31 @@ grid_maps_list <- lapply(detroit19_grid_list, function(x){
 
 # community
 grid_maps_list[[1]] <- grid_maps_list[[1]] +
-  annotate(geom = "text"    , x = 13467040, y = 322652, label = "WSU campus & Midtown", size = 4) +
+  annotate(geom = "text"    , x = 13467040, y = 322652, label = "WSU campus & Midtown", size = 4, colour = "snow") +
   annotate(geom = "curve" , x = 13467040, y = 320672, xend = 13471640, yend = 314242, size = 0.7,
-           arrow = arrow(length = unit(0.01, "npc")), curvature = 0.3) +
-  scale_fill_continuous(guide = "colourbar", low = "snow", high = viridis_1, n.breaks = 3) 
-  
+           arrow = arrow(length = unit(0.01, "npc")), curvature = 0.3, colour = "snow") +
+  # scale_fill_continuous(guide = "colourbar", low = "snow", high = viridis_1, n.breaks = 3) +
+  scale_fill_viridis_c(guide = "colourbar", n.breaks = 3, alpha = 0.9) 
 
 # crime
 grid_maps_list[[2]] <- grid_maps_list[[2]] +
-  annotate(geom = "text"  , x = 13477040, y = 324802, label = "Henry Ford Hospital", size = 4) +
-  annotate(geom = "curve" , x = 13473240, y = 322952, xend = 13470640, yend = 318852, size = 0.7,
-           arrow = arrow(length = unit(0.01, "npc")), curvature = -0.3) +
-  annotate(geom = "text"  , x = 13497168, y = 337022, label = "Ascension St. John Hospital", size = 4) +
+  annotate(geom = "text"  , x = 13465040, y = 324802, label = "Henry Ford Hospital", size = 4, colour = "snow") +
+  annotate(geom = "curve" , x = 13465040, y = 322952, xend = 13469040, yend = 318852, size = 0.7,
+           arrow = arrow(length = unit(0.01, "npc")), curvature = 0.3, colour = "snow") +
+  annotate(geom = "text"  , x = 13497168, y = 337022, label = "Ascension St. John Hospital", size = 4, colour = "snow") +
   annotate(geom = "curve" , x = 13511168, y = 337062, xend = 13515568, yend = 337562, size = 0.7,
-           arrow = arrow(length = unit(0.01, "npc")), curvature = 0.1) +
-  annotate(geom = "text"  , x = 13434648, y = 331826, label = "DMC Sinai Grace Hospital", size = 4) +
+           arrow = arrow(length = unit(0.01, "npc")), curvature = 0.1, colour = "snow") +
+  annotate(geom = "text"  , x = 13434648, y = 331826, label = "DMC Sinai Grace Hospital", size = 4, colour = "snow") +
   annotate(geom = "curve" , x = 13437648, y = 333049, xend = 13442046, yend = 336525, size = 0.7,
-           arrow = arrow(length = unit(0.01, "npc")), curvature = -0.2)
+           arrow = arrow(length = unit(0.01, "npc")), curvature = -0.2, colour = "snow")
 
 # health. 
 grid_maps_list[[3]] <- grid_maps_list[[3]] +
   # annotate(geom = "text"  , x = 13481089, y = 322116, label = "Mental health service facility", size = 4) +
   # annotate(geom = "curve" , x = 13482240, y = 320016, xend = 13485816, yend = 317571, size = 0.7,
   #          arrow = arrow(length = unit(0.01, "npc")), curvature = 0.3) +
-  scale_fill_continuous(guide = "colourbar", low = "snow", high = viridis_1, n.breaks = 3, breaks = c(0,30,60))
+  # scale_fill_continuous(guide = "colourbar", low = "snow", high = viridis_1, n.breaks = 3, breaks = c(0,30,60))
+  scale_fill_viridis_c(guide = "colourbar", n.breaks = 3, alpha = 0.9, breaks = c(0,30,60)) 
 
 # quality of life
 grid_maps_list[[5]] <- grid_maps_list[[5]] +
@@ -836,4 +884,7 @@ maps_gg <-  plot_grid(plotlist = grid_maps_list,
                       hjust = 0.5, label_x = 0.5,
                       scale = 1.05)
 # Save.
-ggsave(filename = "visuals/fig3_maps_tos.png", height = 48, width = 40, unit = "cm", dpi = 300)
+ggsave(filename = "visuals/fig4_maps_tos.png", height = 48, width = 40, unit = "cm", dpi = 300)
+
+# Save workspace.
+# save.image(file = "data/workspace_complete.RData")

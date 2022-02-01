@@ -306,6 +306,7 @@ detroit_19_times_agg_df <- detroit_19_times_df %>%
   group_by(calldescription2, type) %>% 
   summarise(freq            = sum(sum_counts),
             prop_time       = sum(prop_time),
+            sum_time        = sum(sum_time), # optional
             prop_count      = sum(prop_counts)) %>% 
   ungroup() %>% 
   arrange(type)
@@ -321,8 +322,8 @@ des_stats_df <- detroit_19_times_agg_df %>%
   group_by(type) %>% 
   summarise(`Count`      = sum(freq),
             `Count (%)`  = round(sum(prop_count), 2),
-            `Total deployed time (%)`   = round(sum(prop_time ), 2)) %>% 
-            # `Total deployed time (hours)` = sum_time_hours) %>%
+            `Total deployed time (%)`   = round(sum(prop_time ), 2),
+            `Total deployed time (shifts)` = round((sum(sum_time)/60)/7.5, 0) )  %>%
   rename(`Demand type` = type) %>% 
   ungroup()
 
@@ -448,7 +449,7 @@ time_heat_gg <- plot_grid(plotlist = dh_agg_hm_list,
            x = 0.5, y = 0, size = 2)
 
 # Save.
-ggsave(filename = "visuals/fig2_time_heat_total_time.png", height = 20, width = 14, unit = "cm", dpi = 300)
+ggsave(filename = "visuals/fig3_time_heat_total_time.png", height = 20, width = 14, unit = "cm", dpi = 300)
 
 # Investigate missings in coordinates.
 sum(is.na(detroit19_deploy_df$latitude))  # 0
@@ -535,7 +536,21 @@ detroit19_deploy_clip_sf <- detroit19_deploy_known_sf %>%
 detroit_grid_sf <- detroit_uni_sf %>% 
   # st_buffer(dist = 1000) %>% # To check if grids miss incidents near boundary.
   st_make_grid(cellsize = 1000) %>% 
-  st_as_sf()
+  st_as_sf() 
+
+# Plot.
+# ggplot() +
+#   geom_sf(data = detroit_grid_sf) +
+#   geom_sf(data = detroit_uni_sf, colour = "red", fill = "transparent")
+
+# Clip the grid to the Detroit boundary.
+detroit_grid_sf <- detroit_grid_sf %>% 
+  st_intersection(detroit_uni_sf)
+
+# Plot.
+# ggplot() +
+#   geom_sf(data = detroit_grid_sf) +
+#   geom_sf(data = detroit_uni_sf, colour = "red", fill = "transparent")
 
 # Check counts used in maps. Lower due to incomplete coordinates.
 sum(detroit19_deploy_clip_sf$n) # 246903
@@ -546,8 +561,7 @@ detroit19_deploy_clip_list <- detroit19_deploy_clip_sf %>%
   group_split(type)
 
 # Create list of the duplicate grid sf objects to match. Not an ideal approach but it works.
-grids_list <- c(detroit_grid_sf, detroit_grid_sf, detroit_grid_sf,
-                detroit_grid_sf, detroit_grid_sf, detroit_grid_sf)
+grids_list <- rep(list(detroit_grid_sf), 6)
 
 # Create point (incidents) to polygon (grids) function.
 p2p_fun <- function(x, y){
@@ -555,6 +569,9 @@ p2p_fun <- function(x, y){
     st_as_sf() %>% 
     mutate(call_count = lengths(st_intersects(x, y)))
 }
+
+# Save workspace.
+# save.image(file = "workspce_total_time.RData")
 
 # Run p2p through lists of incidents and duplicate grids.
 detroit19_grid_list <- map2(grids_list, detroit19_deploy_clip_list, p2p_fun)
@@ -575,9 +592,9 @@ names(detroit19_grid_list) <- unique(dh_agg_df$type)
 # Generate maps of incident counts by type.
 grid_maps_list <- lapply(detroit19_grid_list, function(x){
   ggplot() +
-    geom_sf(data = x, mapping = aes(fill = call_count), colour = NA) +
-    geom_sf(data = detroit_uni_sf, fill = NA, colour = "grey78") +
-    scale_fill_continuous(guide = "colourbar", low = "snow", high = viridis_1, n.breaks = 2,
+    geom_sf(data = x, mapping = aes(fill = call_count), colour = "transparent") +
+    # geom_sf(data = detroit_uni_sf, fill = NA, colour = "grey78") +
+    scale_fill_viridis_c(guide = "colourbar", n.breaks = 2, alpha = 0.9,
                           limits = c(0,max(x$call_count))) +
     labs(fill = NULL) +
     guides(fill = guide_colourbar(barwidth = 9, barheight = 0.6, draw.ulim = FALSE,
@@ -592,7 +609,7 @@ grid_maps_list <- lapply(detroit19_grid_list, function(x){
 # Adjust quality of life limits due to rounded max, and annotate north arrow and scale.
 # Note that this replaces an existing element and replaces previous fill layer.
 grid_maps_list[[5]] <- grid_maps_list[[5]] +
-  scale_fill_continuous(guide = "colourbar", low = "snow", high = viridis_1, n.breaks = 2,
+  scale_fill_viridis_c(guide = "colourbar", n.breaks = 2, alpha = 0.9,
                         limits = c(0,20+max(detroit19_grid_list[[5]]$call_count))) +
   annotation_scale(pad_x = unit(1, "cm"), pad_y = unit(0.1, "cm"), line_width = 1, text_cex = 1, style = "ticks") +
   annotation_north_arrow(pad_x = unit(2.8, "cm"), pad_y = unit(1.5, "cm"),
@@ -602,23 +619,23 @@ grid_maps_list[[5]] <- grid_maps_list[[5]] +
 
 # community
 grid_maps_list[[1]] <- grid_maps_list[[1]] +
-  annotate(geom = "text"    , x = 13467040, y = 322652, label = "WSU campus & Midtown", size = 4) +
+  annotate(geom = "text"    , x = 13467040, y = 322652, label = "WSU campus & Midtown", size = 4, colour = "snow") +
   annotate(geom = "curve" , x = 13467040, y = 320672, xend = 13471640, yend = 314242, size = 0.7,
-           arrow = arrow(length = unit(0.01, "npc")), curvature = 0.3) +
-  scale_fill_continuous(guide = "colourbar", low = "snow", high = viridis_1, n.breaks = 2) 
+           arrow = arrow(length = unit(0.01, "npc")), curvature = 0.3, colour = "snow") +
+  scale_fill_viridis_c(guide = "colourbar", n.breaks = 2, alpha = 0.9) 
 
 
 # crime
 grid_maps_list[[2]] <- grid_maps_list[[2]] +
-  annotate(geom = "text"    , x = 13477040, y = 324802, label = "Henry Ford Hospital", size = 4) +
-  annotate(geom = "curve" , x = 13473240, y = 322952, xend = 13470640, yend = 318852, size = 0.7,
-           arrow = arrow(length = unit(0.01, "npc")), curvature = -0.3) +
-  annotate(geom = "text"    , x = 13497168, y = 337022, label = "Ascension St. John Hospital", size = 4) +
+  annotate(geom = "text"  , x = 13465040, y = 324802, label = "Henry Ford Hospital", size = 4, colour = "snow") +
+  annotate(geom = "curve" , x = 13465040, y = 322952, xend = 13469040, yend = 318852, size = 0.7,
+           arrow = arrow(length = unit(0.01, "npc")), curvature = 0.3, colour = "snow") +
+  annotate(geom = "text"    , x = 13497168, y = 337022, label = "Ascension St. John Hospital", size = 4, colour = "snow") +
   annotate(geom = "curve" , x = 13511168, y = 337062, xend = 13515568, yend = 337562, size = 0.7,
-           arrow = arrow(length = unit(0.01, "npc")), curvature = 0.1) +
-  annotate(geom = "text"  , x = 13434648, y = 331826, label = "DMC Sinai Grace Hospital", size = 4) +
+           arrow = arrow(length = unit(0.01, "npc")), curvature = 0.1, colour = "snow") +
+  annotate(geom = "text"  , x = 13434648, y = 331826, label = "DMC Sinai Grace Hospital", size = 4, colour = "snow") +
   annotate(geom = "curve" , x = 13437648, y = 333049, xend = 13442046, yend = 336525, size = 0.7,
-           arrow = arrow(length = unit(0.01, "npc")), curvature = -0.2)
+           arrow = arrow(length = unit(0.01, "npc")), curvature = -0.2, colour = "snow")
 
 # health. label not included.
 # grid_maps_list[[3]] <- grid_maps_list[[3]] +
@@ -629,7 +646,7 @@ grid_maps_list[[2]] <- grid_maps_list[[2]] +
 
 # quality of life. Note that we also slightly adjust the scale due to rounding making the breaks odd.
 grid_maps_list[[5]] <- grid_maps_list[[5]] +
-  scale_fill_continuous(guide = "colourbar", low = "snow", high = viridis_1, n.breaks = 2,
+  scale_fill_viridis_c(guide = "colourbar", n.breaks = 2, alpha = 0.9,
                         limits = c(0,1.2*+max(detroit19_grid_list[[5]]$call_count))) +
   annotate(geom = "text"    , x = 13490040, y = 301652, label = "Downtown", size = 4) +
   annotate(geom = "curve" , x = 13484240, y = 301752, xend = 13481040, yend = 304752, size = 0.7,
@@ -646,4 +663,4 @@ maps_gg <-  plot_grid(plotlist = grid_maps_list,
                       hjust = 0.5, label_x = 0.5,
                       scale = 1.05)
 # Save.
-ggsave(filename = "visuals/fig3_maps_total_time.png", height = 48, width = 40, unit = "cm", dpi = 300)
+ggsave(filename = "visuals/fig5_maps_counts.png", height = 48, width = 40, unit = "cm", dpi = 300)

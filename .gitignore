@@ -2,6 +2,8 @@
 data/*.csv
 data/*.qgz
 data/Current_City*
+# Scripts
+scripts/author_sample.r
 
 # Results
 results/*.dbf
@@ -10,6 +12,7 @@ results/*.shx
 results/*.prj
 
 # Docs
+*.RData
 *.pdf
 *.docx
 *.rmd
