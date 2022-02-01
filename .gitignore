@@ -21,8 +21,8 @@ results/*.prj
 *.bib
 *.csl
 
-# Paper back-up
-!paper.Rmd
+# Paper back-up 1 Feb 2022
+# !paper.Rmd
 
 # History files
 .Rhistory

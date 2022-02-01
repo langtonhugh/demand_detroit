@@ -749,9 +749,9 @@ histo_comp_gg <- histo_gg +
 ggsave(plot = histo_comp_gg, filename = "visuals/fig6_histogram_mins_tos.png", height = 20, width = 16)
 
 # Create list of the duplicate grid sf objects to match. Not an ideal approach but it works.
-#grids_list <- rep(list(detroit_grid_sf), 6) # run this instead if the below produced length of 18.
-grids_list <- list(detroit_grid_sf, detroit_grid_sf, detroit_grid_sf,
-                   detroit_grid_sf, detroit_grid_sf, detroit_grid_sf)
+grids_list <- rep(list(detroit_grid_sf), 6) # run this instead if the below produced length of 18.
+# grids_list <- list(detroit_grid_sf, detroit_grid_sf, detroit_grid_sf,
+#                    detroit_grid_sf, detroit_grid_sf, detroit_grid_sf)
 
 # Create point (incidents) to polygon (grids) function.
 p2p_fun <- function(x, y){

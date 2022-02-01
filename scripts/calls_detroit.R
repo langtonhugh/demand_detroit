@@ -561,7 +561,10 @@ detroit19_deploy_clip_list <- detroit19_deploy_clip_sf %>%
   group_split(type)
 
 # Create list of the duplicate grid sf objects to match. Not an ideal approach but it works.
-grids_list <- rep(list(detroit_grid_sf), 6)
+grids_list <- rep(list(detroit_grid_sf), 6) # run this instead if the below produced length of 18.
+# grids_list <- list(detroit_grid_sf, detroit_grid_sf, detroit_grid_sf,
+#                    detroit_grid_sf, detroit_grid_sf, detroit_grid_sf)
+
 
 # Create point (incidents) to polygon (grids) function.
 p2p_fun <- function(x, y){
@@ -569,9 +572,6 @@ p2p_fun <- function(x, y){
     st_as_sf() %>% 
     mutate(call_count = lengths(st_intersects(x, y)))
 }
-
-# Save workspace.
-# save.image(file = "workspce_total_time.RData")
 
 # Run p2p through lists of incidents and duplicate grids.
 detroit19_grid_list <- map2(grids_list, detroit19_deploy_clip_list, p2p_fun)
@@ -664,3 +664,6 @@ maps_gg <-  plot_grid(plotlist = grid_maps_list,
                       scale = 1.05)
 # Save.
 ggsave(filename = "visuals/fig5_maps_counts.png", height = 48, width = 40, unit = "cm", dpi = 300)
+
+# Save workspace.
+# save.image(file = "workspce_total_time.RData")
