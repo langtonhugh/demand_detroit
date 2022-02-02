@@ -162,7 +162,7 @@ calldesc2_df <- detroit19_deploy_df %>%
 calldesc2_df %>%
   rename(calldescription_original = calldescription,
          calldescription_new      = calldescription2) %>%
-write_csv(file = "results/categorization_summary.csv")
+  write_csv(file = "results/categorization_summary.csv")
 
 # Aggregate.
 detroit_19_times_df <- detroit19_deploy_df %>% 
@@ -386,6 +386,12 @@ time_ann_gg <- time_gg +
 
 # Save portrait version.
 ggsave(filename = "visuals/fig1_time_tos.png", height = 48, width = 40, unit = "cm", dpi = 300)
+
+# Save list of the 202 raw call descriptions for TV.
+temp <- detroit_19_times_agg_df %>% 
+  filter(type != "unclassified") %>% 
+  left_join(calldesc2_df)
+  
 
 # For further descriptive statistics, we join the new categories back with the raw data.
 detroit19_deploy_df <- detroit19_deploy_df %>% 
