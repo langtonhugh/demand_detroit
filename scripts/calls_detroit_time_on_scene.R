@@ -158,7 +158,7 @@ calldesc2_df <- detroit19_deploy_df %>%
   distinct() %>% 
   arrange(calldescription)
 
-# Save for reader reference. No need to save again.
+# Save for reader reference. This is what TV reviewed.
 calldesc2_df %>%
   rename(calldescription_original = calldescription,
          calldescription_new      = calldescription2) %>%
@@ -386,12 +386,6 @@ time_ann_gg <- time_gg +
 
 # Save portrait version.
 ggsave(filename = "visuals/fig1_time_tos.png", height = 48, width = 40, unit = "cm", dpi = 300)
-
-# Save list of the 202 raw call descriptions for TV.
-temp <- detroit_19_times_agg_df %>% 
-  filter(type != "unclassified") %>% 
-  left_join(calldesc2_df)
-  
 
 # For further descriptive statistics, we join the new categories back with the raw data.
 detroit19_deploy_df <- detroit19_deploy_df %>% 

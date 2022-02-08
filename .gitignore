@@ -22,7 +22,7 @@ results/*.prj
 *.csl
 
 # Paper back-up 1 Feb 2022
-# !paper.Rmd
+!paper.Rmd
 
 # History files
 .Rhistory
