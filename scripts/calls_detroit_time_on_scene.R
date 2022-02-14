@@ -320,7 +320,6 @@ sum(is.na(detroit_19_times_agg_df)) # 0
 # How many incidents in total?
 sum(detroit_19_times_agg_df$freq) # 258773
 
-
 # Descriptive stats. 
 des_stats_df <- detroit_19_times_agg_df %>% 
   group_by(type) %>% 
@@ -331,7 +330,26 @@ des_stats_df <- detroit_19_times_agg_df %>%
   ungroup()
 
 # Save.
-write_csv(x = des_stats_df, file = "results/table2_des_stats_tos.csv")
+write_csv(x = des_stats_df, file = "results/table1_des_stats_tos.csv")
+
+# Investigate priorities.
+sum(is.na(detroit19_deploy_df$priority)) # 142 missings.
+
+# Join to get demand types.
+priorities_df <- detroit19_deploy_df %>% 
+  select(incident_id, calldescription2, priority) %>%
+  left_join(detroit_19_times_df)
+
+# Frequenc and prop statistics.
+prior_freq_df <- priorities_df %>% 
+  filter(type != "unclassified") %>% 
+  drop_na(priority) %>% 
+  group_by(type) %>% 
+  count(priority) %>% 
+  mutate(totals = sum(n)) %>%  
+  ungroup() %>% 
+  mutate(props = round(100*n/totals, 2)) %>% 
+  filter(priority == 1)
 
 # Create categorical colour scheme for future use. Colourblind friendly.
 # col_vec <- c("#c7e9b4", "#7fcdbb", "#41b6c4", "#1d91c0", "#225ea8", "#0c2c84")
@@ -601,7 +619,7 @@ means_table_df <- means_df %>%
 # sum(means_df$`Total (hours)`) # 176616
 
 # Save.
-write_csv(x = means_table_df, file = "results/table3_des_stats_tos.csv")
+write_csv(x = means_table_df, file = "results/table2_des_stats_tos.csv")
 
 # Calculate concentration of calls.
 names(detroit19_deploy_clip_sf)

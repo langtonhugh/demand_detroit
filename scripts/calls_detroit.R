@@ -322,13 +322,13 @@ des_stats_df <- detroit_19_times_agg_df %>%
   group_by(type) %>% 
   summarise(`Count`      = sum(freq),
             `Count (%)`  = round(sum(prop_count), 2),
-            `Total deployed time (%)`   = round(sum(prop_time ), 2),
-            `Total deployed time (shifts)` = round((sum(sum_time)/60)/7.5, 0) )  %>%
+            `Total deployed time (%)`   = round(sum(prop_time ), 2)) %>% 
+            # `Total deployed time (shifts)` = round((sum(sum_time)/60)/7.5, 0) )  %>%
   rename(`Demand type` = type) %>% 
   ungroup()
 
 # Save.
-write_csv(x = des_stats_df, file = "results/table2_des_stats_total_time.csv")
+write_csv(x = des_stats_df, file = "results/table1_des_stats_total_time.csv")
 
 # Create categorical colour scheme for future use. Colourblind friendly.
 # col_vec <- c("#c7e9b4", "#7fcdbb", "#41b6c4", "#1d91c0", "#225ea8", "#0c2c84")
