@@ -1,8 +1,8 @@
 Demand type,Count,Count (%),Time on scene (%)
 community,14466,5.59,5.06
-crime,114791,44.36,51.39
+crime,114800,44.36,51.4
 health,19873,7.68,7.1
-proactive,15662,6.05,3.89
-quality of life,54703,21.14,14.66
-traffic,32148,12.42,15.64
-unclassified,7130,2.76,2.25
+proactive,15663,6.05,3.89
+quality of life,54702,21.14,14.66
+traffic,32147,12.42,15.63
+unclassified,7135,2.76,2.25

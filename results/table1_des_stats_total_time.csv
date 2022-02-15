@@ -1,8 +1,8 @@
 Demand type,Count,Count (%),Total deployed time (%)
-community,14466,5.59,6.47
-crime,114791,44.36,46.97
-health,19873,7.68,7.35
-proactive,15662,6.05,4.79
-quality of life,54703,21.14,19.13
-traffic,32148,12.42,13.4
-unclassified,7130,2.76,1.88
+community,14466,5.59,5.15
+crime,114800,44.36,50.55
+health,19873,7.68,7.19
+proactive,15663,6.05,4.04
+quality of life,54702,21.14,15.54
+traffic,32147,12.42,15.27
+unclassified,7135,2.76,2.26

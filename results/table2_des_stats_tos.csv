@@ -1,6 +1,6 @@
 Demand type,Mean,Median,Min.,Max.,SD
 community,40,24.6,0.1,847.7,48
-crime,50.9,30.4,0.1,987,64.1
+crime,51,30.4,0.1,987,64.1
 health,40.9,29.1,0.1,897.4,45.2
 proactive,28.4,16.5,0.1,907.9,47.4
 quality of life,30.5,19.7,0.1,885.6,41.1

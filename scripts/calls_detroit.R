@@ -55,8 +55,13 @@ length(unique(detroit_df$incident_id)) # 419193. Same as the number of rows.
 
 # Remove missings, zeros and negatives.
 detroit19_sub_df <- detroit_df %>% 
-  drop_na(totaltime, time_on_scene) %>%  # note the overlap.
-  filter(totaltime >0, time_on_scene >0)
+  # drop_na(totaltime, time_on_scene) %>%        # note the overlap.
+  drop_na(traveltime, time_on_scene) %>%         # note the overlap.
+  filter(traveltime >=0, time_on_scene >0) %>%   # has to be time on scene, but no travel time is ok.
+  mutate(totaltime = traveltime + time_on_scene) # this overwrite the original measure.
+
+# Check.
+nrow(detroit19_sub_df) # 293025
 
 # First, filter out calldescriptions which are admin, completely unknown or do not appear to
 # involve deployment.
@@ -315,7 +320,7 @@ detroit_19_times_agg_df <- detroit_19_times_df %>%
 sum(is.na(detroit_19_times_agg_df)) # 0
 
 # How many incidents in total?
-sum(detroit_19_times_agg_df$freq) # 258773
+sum(detroit_19_times_agg_df$freq) # 258786
 
 # Descriptive stats. 
 des_stats_df <- detroit_19_times_agg_df %>% 
@@ -340,7 +345,7 @@ write_csv(x = detroit_19_times_agg_df, file = "results/prop_breakdown_total_time
 detroit_19_times_agg_df <- detroit_19_times_agg_df %>% 
   mutate(calldescription2_labs = str_replace_all(string = calldescription2, pattern = " ", replacement = "\n"))
 
-length(unique(detroit_19_times_agg_df$calldescription2)) # 46
+length(unique(detroit_19_times_agg_df$calldescription2)) 
 
 # Create main colour.
 viridis_1 <- viridis::viridis(5)[2]
@@ -406,7 +411,7 @@ mini_df <- detroit19_deploy_df %>%
   slice(1:100)
 
 # Check categories again.
-length(unique(detroit19_deploy_df$calldescription2)) # 46
+length(unique(detroit19_deploy_df$calldescription2)) # 52
 
 # Aggregate by date and hour.
 dh_agg_df <- detroit19_deploy_df %>% 
@@ -484,10 +489,10 @@ detroit_sample_sf <- detroit19_deploy_df %>%
 #   write_csv(file = "data/detroit_sample.csv")
 
 # Check categories again.
-length(unique(detroit19_deploy_df$calldescription2)) # 46
+length(unique(detroit19_deploy_df$calldescription2)) # 52
 
 # Check counts total.
-nrow(detroit19_deploy_df) # 258773
+nrow(detroit19_deploy_df) # 258786
 
 # This makes it clear that many incidents for which the location is not known are geocoded
 # to a specific arbitrary location (-83.111560213, 42.3003668800001).
@@ -553,7 +558,7 @@ detroit_grid_sf <- detroit_grid_sf %>%
 #   geom_sf(data = detroit_uni_sf, colour = "red", fill = "transparent")
 
 # Check counts used in maps. Lower due to incomplete coordinates.
-sum(detroit19_deploy_clip_sf$n) # 246903
+sum(detroit19_deploy_clip_sf$n) # 246913
 
 # Split incident sf object into list.
 detroit19_deploy_clip_list <- detroit19_deploy_clip_sf %>% 
@@ -666,4 +671,4 @@ maps_gg <-  plot_grid(plotlist = grid_maps_list,
 ggsave(filename = "visuals/fig5_maps_counts.png", height = 48, width = 40, unit = "cm", dpi = 300)
 
 # Save workspace.
-# save.image(file = "workspce_total_time.RData")
+# save.image(file = "data/workspce_total_time.RData")
