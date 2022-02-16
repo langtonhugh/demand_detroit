@@ -59,8 +59,11 @@ length(unique(detroit_df$incident_id)) # 419193. Same as the number of rows.
 
 # Remove missings, zeros and negatives.
 detroit19_sub_df <- detroit_df %>% 
-  drop_na(totaltime, time_on_scene) %>%  # note the overlap.
-  filter(totaltime >0, time_on_scene >0)
+  # drop_na(totaltime, time_on_scene) %>%        # note the overlap.
+  drop_na(traveltime, time_on_scene) %>%         # note the overlap.
+  filter(traveltime >=0, time_on_scene >0) %>%   # has to be time on scene, but no travel time is ok.
+  mutate(totaltime = traveltime + time_on_scene) # this overwrite the original measure.
+
 
 # First, filter out calldescriptions which are admin, completely unknown or do not appear to
 # involve deployment.
@@ -318,8 +321,7 @@ detroit_19_times_agg_df <- detroit_19_times_df %>%
 sum(is.na(detroit_19_times_agg_df)) # 0
 
 # How many incidents in total?
-sum(detroit_19_times_agg_df$freq) # 258773
-
+sum(detroit_19_times_agg_df$freq) # 258786
 
 # Descriptive stats. 
 des_stats_df <- detroit_19_times_agg_df %>% 
@@ -331,7 +333,26 @@ des_stats_df <- detroit_19_times_agg_df %>%
   ungroup()
 
 # Save.
-write_csv(x = des_stats_df, file = "results/table2_des_stats_tos.csv")
+write_csv(x = des_stats_df, file = "results/table1_des_stats_tos.csv")
+
+# Investigate priorities.
+sum(is.na(detroit19_deploy_df$priority)) # 142 missings.
+
+# Join to get demand types.
+priorities_df <- detroit19_deploy_df %>% 
+  select(incident_id, calldescription2, priority) %>%
+  left_join(detroit_19_times_df)
+
+# Frequenc and prop statistics.
+prior_freq_df <- priorities_df %>% 
+  filter(type != "unclassified") %>% 
+  drop_na(priority) %>% 
+  group_by(type) %>% 
+  count(priority) %>% 
+  mutate(totals = sum(n)) %>%  
+  ungroup() %>% 
+  mutate(props = round(100*n/totals, 2)) %>% 
+  filter(priority == 1)
 
 # Create categorical colour scheme for future use. Colourblind friendly.
 # col_vec <- c("#c7e9b4", "#7fcdbb", "#41b6c4", "#1d91c0", "#225ea8", "#0c2c84")
@@ -499,7 +520,7 @@ detroit_sample_sf <- detroit19_deploy_df %>%
 length(unique(detroit19_deploy_df$calldescription2)) # 50
 
 # Check counts total.
-nrow(detroit19_deploy_df) # 258773
+nrow(detroit19_deploy_df) # 258786
 
 # This makes it clear that many incidents for which the location is not known are geocoded
 # to a specific arbitrary location (-83.111560213, 42.3003668800001).
@@ -568,7 +589,7 @@ detroit_grid_sf <- detroit_grid_sf %>%
 #   geom_sf()
 
 # Check counts used in maps. Lower due to incomplete coordinates.
-sum(detroit19_deploy_clip_sf$n) # 246971
+sum(detroit19_deploy_clip_sf$n) # 246913
 
 # Split incident sf object into list.
 detroit19_deploy_clip_list <- detroit19_deploy_clip_sf %>% 
@@ -601,7 +622,7 @@ means_table_df <- means_df %>%
 # sum(means_df$`Total (hours)`) # 176616
 
 # Save.
-write_csv(x = means_table_df, file = "results/table3_des_stats_tos.csv")
+write_csv(x = means_table_df, file = "results/table2_des_stats_tos.csv")
 
 # Calculate concentration of calls.
 names(detroit19_deploy_clip_sf)
@@ -887,4 +908,4 @@ maps_gg <-  plot_grid(plotlist = grid_maps_list,
 ggsave(filename = "visuals/fig4_maps_tos.png", height = 48, width = 40, unit = "cm", dpi = 300)
 
 # Save workspace.
-# save.image(file = "data/workspace_complete.RData")
+save.image(file = "data/workspace_complete.RData")
