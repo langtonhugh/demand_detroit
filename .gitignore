@@ -22,9 +22,9 @@ results/*.prj
 *.csl
 
 # Paper 10 Feb 2022
-!paper.Rmd
-!apa.csl
-!refs.bib
+paper.Rmd
+apa.csl
+refs.bib
 
 # History files
 .Rhistory
