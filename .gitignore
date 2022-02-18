@@ -25,6 +25,7 @@ results/*.prj
 paper.Rmd
 apa.csl
 refs.bib
+paper.aux
 
 # History files
 .Rhistory
