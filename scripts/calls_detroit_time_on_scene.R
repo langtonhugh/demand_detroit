@@ -161,7 +161,7 @@ calldesc2_df <- detroit19_deploy_df %>%
   distinct() %>% 
   arrange(calldescription)
 
-# Save for reader reference. This is what TV reviewed.
+# Save for reader reference.
 calldesc2_df %>%
   rename(calldescription_original = calldescription,
          calldescription_new      = calldescription2) %>%
