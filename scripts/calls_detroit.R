@@ -40,8 +40,7 @@ detroit_df %>%
   summarise(counts = n()) %>% 
   ungroup()
 
-# Check time variables variables. Totaltime = totalresponsetime + time_on_scene.
-# Note that some missings still have a total time allocated.
+# Check time variables variables. 
 detroit_df %>% 
   select(calldescription, dispatchtime, traveltime, totalresponsetime, time_on_scene, totaltime)
 

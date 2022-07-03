@@ -44,8 +44,7 @@ detroit_df %>%
   summarise(counts = n()) %>% 
   ungroup()
 
-# Check time variables variables. Totaltime = totalresponsetime + time_on_scene.
-# Note that some missings still have a total time allocated.
+# Check time variables variables. 
 detroit_df %>% 
   select(calldescription, dispatchtime, traveltime, totalresponsetime, time_on_scene, totaltime)
 
@@ -697,11 +696,11 @@ lorenz_gg <- ggplot() +
              mapping = aes(x = data.cumpercUnit, y = data.cumpercEvents, group = thresh), size = 1.5) +
   geom_line(mapping = aes(x = 0:100, y = 0:100), linetype = "dotted", alpha = 0.3) +
   annotate(geom = "text", x = 75, y = 79, label = "Line of perfect equality", angle = 42.5, size = 2, alpha = 0.5) +
-  annotate(geom = "text", x = 15, y = 80, label = "50% of time on scene\n consumed by 15% of calls", size = 2, hjust = 0.5) +
+  annotate(geom = "text", x = 15, y = 80, label = "50% of time on scene\n consumed by 15% of incidents", size = 2, hjust = 0.5) +
   annotate(geom = "curve" , x = 9, y = 75, xend = 13, yend = 52, size = 0.3, arrow = arrow(length = unit(0.01, "npc")), curvature = 0.3) +
-  annotate(geom = "text"  , x = 35 , y = 46, label = "25% of time on scene\n consumed by 5% of calls", size = 2, hjust = 0.5) +
+  annotate(geom = "text"  , x = 35 , y = 46, label = "25% of time on scene\n consumed by 5% of incidents", size = 2, hjust = 0.5) +
   annotate(geom = "curve" , x = 27, y = 41, xend = 6, yend = 25, size = 0.3, arrow = arrow(length = unit(0.01, "npc")), curvature = -0.3) +
-  labs(colour = NULL, x = "Cumulative percent of calls", y = "Cumulative percent of time on scene") +
+  labs(colour = NULL, x = "Cumulative percent of incidents", y = "Cumulative percent of time on scene") +
   theme_bw() +
   theme(axis.title = element_text(size = 8),
         axis.text = element_text(size = 7))
