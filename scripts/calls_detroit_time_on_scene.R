@@ -9,7 +9,7 @@ library(purrr)
 library(forcats)
 library(stringr)
 library(lubridate)
-library(lorenzgini)
+library(lorenzgini) # requires install from github.
 library(treemapify)
 library(ggplot2)
 library(sf)
@@ -473,7 +473,7 @@ dh_agg_hm_list <- lapply(dh_agg_list, function(x){
 time_heat_gg <- plot_grid(plotlist = dh_agg_hm_list,
                           ncol = 1,
                           labels = unique(dh_agg_df$type),
-                          label_size = 8, label_fontface = "plain",
+                          label_size = 6.5, label_fontface = "plain",
                           hjust = 0.5, label_x = 0.5,
                           scale = 0.9) +
   theme(plot.margin = unit(c(0,0,0.2,0), "cm")) +
@@ -481,7 +481,8 @@ time_heat_gg <- plot_grid(plotlist = dh_agg_hm_list,
            x = 0.5, y = 0, size = 2)
 
 # Save.
-ggsave(filename = "visuals/fig3_time_heat_tos.png", height = 20, width = 14, unit = "cm", dpi = 300)
+# ggsave(filename = "visuals/fig3_time_heat_tos.png", height = 20, width = 14, unit = "cm", dpi = 300)
+ggsave(filename = "visuals/fig3_time_heat_tos_revised.png", height = 20, width = 14, unit = "cm", dpi = 300)
 
 # Investigate missings in coordinates.
 sum(is.na(detroit19_deploy_df$latitude))  # 0
