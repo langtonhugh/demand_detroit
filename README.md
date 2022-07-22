@@ -1,4 +1,4 @@
-Project describing the scale and composition of emergency calls for police service in Detroit, United States.
+These materials replicate a [recent paper](https://www.tandfonline.com/doi/full/10.1080/15614263.2022.2102494#.YtmYstBTq3I.twitter) published in _Police Practice and Research_ which examined the scale and composition of emergency calls for police service in Detroit, United States.
 
 **Steps for reproduction in R**
 
