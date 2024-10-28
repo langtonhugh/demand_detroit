@@ -292,7 +292,7 @@ unclas_vec    <- c("ADMIT OR E/E",
 # Add broad category.
 # We now also remove prisoner and warrant calls, as these are deemed to officer-initiated.
 detroit_19_times_df <- detroit_19_times_df %>% 
-  mutate(type = if_else(calldescription2 %in% comm_vec     , "community"      , NULL),
+  mutate(type = if_else(calldescription2 %in% comm_vec     , "community"      , NA),
          type = if_else(calldescription2 %in% crime_vec    , "crime"          , type),
          type = if_else(calldescription2 %in% health_vec   , "health"         , type),
          type = if_else(calldescription2 %in% proactive_vec, "proactive"      , type),
@@ -602,7 +602,7 @@ grid_maps_list <- lapply(detroit19_grid_list, function(x){
                           limits = c(0,max(x$call_count))) +
     labs(fill = NULL) +
     guides(fill = guide_colourbar(barwidth = 9, barheight = 0.6, draw.ulim = FALSE,
-                                  ticks.colour = "black", ticks.linewidth = 2)) +
+                                  ticks.colour = "black", ticks.linewidth = 0.5)) +
     theme_void() +
     theme(legend.text = element_text(size = 11),
           legend.position = c(0.7,0.24),

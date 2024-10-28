@@ -9,7 +9,8 @@ library(purrr)
 library(forcats)
 library(stringr)
 library(lubridate)
-library(lorenzgini) # requires install from github.
+# remotes::install_github("wsteenbeek/lorenzgini") 
+library(lorenzgini) 
 library(treemapify)
 library(ggplot2)
 library(sf)
@@ -294,7 +295,7 @@ unclas_vec    <- c("ADMIT OR E/E",
 # Add broad category.
 # We now also remove prisoner and warrant calls, as these are deemed to officer-initiated.
 detroit_19_times_df <- detroit_19_times_df %>% 
-  mutate(type = if_else(calldescription2 %in% comm_vec     , "community"      , NULL),
+  mutate(type = if_else(calldescription2 %in% comm_vec     , "community"      , NA),
          type = if_else(calldescription2 %in% crime_vec    , "crime"          , type),
          type = if_else(calldescription2 %in% health_vec   , "health"         , type),
          type = if_else(calldescription2 %in% proactive_vec, "proactive"      , type),
@@ -808,7 +809,7 @@ grid_maps_list <- lapply(detroit19_grid_list, function(x){
     scale_fill_viridis_c(guide = "colourbar", n.breaks = 3, alpha = 0.9) +
     labs(fill = NULL) +
     guides(fill = guide_colourbar(barwidth = 9, barheight = 0.6, draw.ulim = FALSE,
-                                  ticks.colour = "black", ticks.linewidth = 2)) +
+                                  ticks.colour = "black", ticks.linewidth = 0.5)) +
     theme_void() +
     theme(legend.text = element_text(size = 11),
           legend.position = c(0.7,0.24),
@@ -908,4 +909,4 @@ maps_gg <-  plot_grid(plotlist = grid_maps_list,
 ggsave(filename = "visuals/fig4_maps_tos.png", height = 48, width = 40, unit = "cm", dpi = 300)
 
 # Save workspace.
-save.image(file = "data/workspace_complete.RData")
+# save.image(file = "data/workspace_complete.RData")

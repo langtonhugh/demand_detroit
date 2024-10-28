@@ -21,6 +21,10 @@ results/*.prj
 *.bib
 *.csl
 
+# Add the results summary back in.
+!results_summary.rmd
+!results_summary.pdf
+
 # Paper 10 Feb 2022
 paper.Rmd
 apa.csl
