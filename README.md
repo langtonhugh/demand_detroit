@@ -1,11 +1,11 @@
-These materials reproduce the findings from a [paper](https://www.tandfonline.com/doi/full/10.1080/15614263.2022.2102494#.YtmYstBTq3I.twitter) published in _Police Practice and Research_ which examined the scale and composition of emergency calls for police service in Detroit, United States.
+These materials reproduce the findings from a [paper](https://www.tandfonline.com/doi/full/10.1080/15614263.2022.2102494#.YtmYstBTq3I.twitter) published in _Police Practice and Research_ which explored police deployment time in response to emergency calls for service using data from Detroit, United States.
 
 **Steps for reproduction in R**
 
 - Download or clone this GitHub repository to your local machine.
-- Download the data files from the corresponding OSF repository and save them in the `data` folder[^1].
+- Download the data files from the corresponding [OSF repository](https://osf.io/vr58u/) and save them in the `data` folder[^1].
 - Open the `demand_viz.Rproj` project file. This will launch RStudio.
-- Package versions are managed by [renv](https://rstudio.github.io/renv/articles/renv.html). Execute `renv::restore()` to install the required packages in the virtual environment. You might have to install [lorenzgini](https://github.com/wsteenbeek/lorenzgini) manually from GitHub -- see suggestions within the script.
+- Package versions are managed by [renv](https://rstudio.github.io/renv/articles/renv.html). Execute `renv::restore()` to install the required packages in the virtual environment. You might have to install [lorenzgini](https://github.com/wsteenbeek/lorenzgini) manually from GitHub -- see comments within the scripts.
 - The two scripts in the _scripts_ folder can be used to reproduce the paper's findings. Both scripts are almost identical: one for the raw counts/total deployment time, one for the time spent on scene[^2].
 - Running these scripts will generate and save tables and figures in the `results` and `visuals` folders, respectively.
 - Render `results_summary.Rmd` to summarize these findings in a single document. 
