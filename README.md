@@ -1,4 +1,6 @@
-These materials reproduce the findings from a [paper](https://www.tandfonline.com/doi/full/10.1080/15614263.2022.2102494#.YtmYstBTq3I.twitter) published in _Police Practice and Research_ which explored police deployment time in response to emergency calls for service using data from Detroit, United States.
+**About**
+
+These materials reproduce the findings from [a journal paper](https://www.tandfonline.com/doi/full/10.1080/15614263.2022.2102494#.YtmYstBTq3I.twitter) published in _Police Practice and Research_ which explored police deployment time in response to emergency calls for service using data from Detroit, United States.
 
 **Steps for reproduction in R**
 
