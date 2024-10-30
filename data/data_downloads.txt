@@ -1,5 +1,0 @@
-Detroit police calls for service:
-https://opendata.arcgis.com/datasets/4f49eb825f564efa9a23cd103c4ba13b_0.csv
-
-Detroit shapefile boundaries:
-https://data.detroitmi.gov/datasets/current-city-of-detroit-neighborhoods/explore?location=42.352721%2C-83.099208%2C11.13.
