@@ -1,14 +1,12 @@
 ---
 title: 'Results: Describing the scale and composition of calls for police service: a replication and extension using open data'
 author: Samuel Langton, Stijn Ruiter, Tim Verlaan
-bibliography: refs.bib
 output:
   pdf_document: 
     number_sections: true
 header-includes:
   - \usepackage{lscape}
   - \usepackage{lineno}
-csl: apa.csl
 ---
 
 **THIS DOC HAS BEEN CREATED PURELY SUMMARIZE THE RESULTS (WITH NO TEXT) IN ONE PLACE. ALL RESULTS PRESENTED HERE ARE GENERATED IN THE R SCRPTS.**
